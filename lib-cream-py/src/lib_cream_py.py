@@ -9,13 +9,13 @@ from util import apply_variant, image_to_array, expand_bounding, find_regions
 
 
 def test():
-    color_file_path = "../decensor_input/mermaid_censored.png"
+    color_file_path = "../../decensor_input/mermaid_censored.png"
     colored_img = Image.open(color_file_path)
-    model = InpaintNN("")
+    model = InpaintNN("", create_model=True)
+    return
     is_mosaic = False
     save_image = lambda i, img: print(i, img)
-    mask_gen = lambda ori, colored: ColorMask(np.squeeze(colored if is_mosaic else ori, axis=0),
-                                              rgb=(0, 1, 0)).display()
+    mask_gen = lambda ori, colored: ColorMask(np.squeeze(colored if is_mosaic else ori, axis=0), rgb=(0, 1, 0)).display()
     decensor_image_variations(model, colored_img, colored_img, mask_gen, 1, False, save_image)
 
 
@@ -45,6 +45,7 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
 
     ori_array = image_to_array(ori)
     ori_array = np.expand_dims(ori_array, axis=0)
+    #todo: mask computed twice
     mask_arr = mask.find_mask_simple()
     mask_img = mask.display()
 

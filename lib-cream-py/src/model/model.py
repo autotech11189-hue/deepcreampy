@@ -20,13 +20,11 @@ class InpaintNN:
         self.batch_size = batch_size
         self.model_path = model_path
         self.create_model = create_model
-        if not create_model:
+        if create_model:
+            self.model = self.train()
+        else:
             self.check_model_file()
             self.model = load_model(self.model_path)
-        else:
-            self.model = self.build_model()
-            if os.path.exists(self.model_path):
-                self.load_checkpoint()
 
     def check_model_file(self):
         if not os.path.exists(self.model_path):
@@ -34,7 +32,7 @@ class InpaintNN:
             print("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
             exit(-1)
 
-    def build_model(self):
+    def train(self):
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         MASK = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
@@ -43,9 +41,10 @@ class InpaintNN:
 
         # Model layers
         input_tensor = layers.Concatenate(axis=-1)([X, MASK])
-
-        vec_en = Encoder(name='G_en')(input_tensor)
-        vec_con = ContextualBlock(name='CB1', k_size=3, lamda=50.0, stride=1)((vec_en, vec_en, MASK))
+        encoder = Encoder(name='G_en')
+        vec_en = encoder(input_tensor)
+        cb1 = ContextualBlock(name='CB1', k_size=3, lamda=50.0, stride=1)
+        vec_con = cb1((vec_en, vec_en, MASK))
 
         decoder = Decoder(name='G_de', size1=self.input_height, size2=self.input_height)
         I_co = decoder(vec_en)
