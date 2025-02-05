@@ -3,7 +3,9 @@ from typing import Callable
 import numpy as np
 from PIL import Image
 
-from mask import Mask, ColorMask
+from mask import Mask, ColorMask, RawMask
+import util
+import mask
 from model.model import InpaintNN
 from util import apply_variant, image_to_array, expand_bounding, find_regions
 
@@ -15,16 +17,16 @@ def test():
     return
     is_mosaic = False
     save_image = lambda i, img: print(i, img)
-    mask_gen = lambda ori, colored: ColorMask(np.squeeze(colored if is_mosaic else ori, axis=0), rgb=(0, 1, 0)).display()
+    mask_gen = lambda i, ori, colored: ColorMask(np.squeeze(colored if is_mosaic else ori, axis=0), rgb=(0, 1, 0)).display()
     decensor_image_variations(model, colored_img, colored_img, mask_gen, 1, False, save_image)
 
 
-def decensor_image_variations(model: InpaintNN, ori: Image, colored: Image, mask_gen: Callable[[Image, Image], Mask],
+def decensor_image_variations(model: InpaintNN, ori: Image, colored: Image, mask_gen: Callable[[int, Image, Image], Mask],
                               variations: int, is_mosaic: bool, callback: Callable[[int, Image], None]):
     for i in range(variations):
         ori = apply_variant(ori, i)
         colored = apply_variant(colored, i)
-        mask = mask_gen(ori, colored)
+        mask = mask_gen(i, ori, colored)
         out = decensor_image(model, mask, ori, colored, is_mosaic)
         out = apply_variant(out, i)
         callback(i, out)

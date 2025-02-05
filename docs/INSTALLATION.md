@@ -2,12 +2,20 @@
 
 ## Download Prebuilt Binaries
 You can download the latest release [here](https://github.com/Deepshift/DeepCreamPy/releases/latest) or find all previous releases [here](https://github.com/Deepshift/DeepCreamPy/releases).
-Binary only available for Windows 64-bit.
+Binary are available for Windows 64-bit, Linux-64-bit & MacOS aarch64
 
 ## Run Code Yourself
+TODO: update
+
 If you want to run the code yourself, you can clone this repo and download the model from https://drive.google.com/open?id=1IMwzqZUuRnTv5jcuKdvZx-RZweknww5x. Unzip the file into the /models/ folder.
 
 If you want access to older models, see https://drive.google.com/open?id=1_A0xFeJhrqpmulA6cC-a7RxJoQOD2RKm.
+
+```
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install -r requirements.txt
+```
 
 ## running the code using Docker
 
@@ -31,16 +39,16 @@ docker run --rm -v $(pwd)/models:/opt/DeepCreamPy/models -v $(pwd)/decensor_inpu
 
 the contents of `decensor_input` and `decensor_input_original` are explained in the [decensoring tutorial](USAGE.md).
 
-### Dependencies (for running the code yourself)
+### Dependencies (for lib)
 - Python 3.12
 - TensorFlow 2
 - Keras
 - Pillow
 
-No GPU required! Tested on Ubuntu 16.04 and Windows. Tensorflow on Windows is compatible with Python 3 and not Python 2. Tensorflow is not compatible with Python 3.7.
+### Dependencies (for app)
+- fastapi
+- uvicorn
+- pydantic
+- lib-cream-py
 
-Tensorflow, Keras, Pillow, and h5py can all be installed by running in the command line
-
-```
-$ pip install -r requirements.txt
-```
+No GPU required!

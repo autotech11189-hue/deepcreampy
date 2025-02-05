@@ -17,13 +17,45 @@ Save these images in the PNG format to the "decensor_input" folder. **They MUST 
 
 ### A. Using the binary
 
-Decensor the images by double-clicking on the decensor file.
+Start a web server and open http://127.0.0.1:8000 in the browser
+```
+$ binary-name --ui-mode 
+```
+```
+$ binary-name --ui-mode --host 127.0.0.1 --port 8000
+```
+Or use the cli
+```
+$ binary-name --decensor_input_path='path/to/input'
+```
+
+```
+usage: main.py [-h] [--decensor_input_path DECENSOR_INPUT_PATH] [--decensor_input_original_path DECENSOR_INPUT_ORIGINAL_PATH]
+               [--decensor_output_path DECENSOR_OUTPUT_PATH] [--clean-up-input-dirs] [--mask MASK] [--is_mosaic IS_MOSAIC] [--variations {1,2,4}] [--ui-mode]
+               [--port PORT] [--host HOST]
+
+options:
+  -h, --help            show this help message and exit
+  --decensor_input_path DECENSOR_INPUT_PATH
+                        input images with censored regions colored green to be decensored by decensor.py path
+  --decensor_input_original_path DECENSOR_INPUT_ORIGINAL_PATH
+                        input images with no modifications to be decensored by decensor.py path
+  --decensor_output_path DECENSOR_OUTPUT_PATH
+                        output images generated from running decensor.py path
+  --clean-up-input-dirs
+                        whether to delete all image files in the input directories when decensoring is done
+  --mask MASK           red channel of mask color in decensoring
+  --is_mosaic IS_MOSAIC
+                        true if image has mosaic censoring, false otherwise
+  --variations {1,2,4}  number of decensor variations to be generated
+  --port [DEFAULT: 8000]
+  --host [DEFAULT: 127.0.0.1]
+```
 
 ### B. Running from scratch
-
-TODO: write documentation
-
-Decensored images will be saved to the "decensor_output" folder. Decensoring takes a few minutes per image.
+```
+$ python app/main.py -h
+```
 
 ## II. Decensoring mosaic censors
 

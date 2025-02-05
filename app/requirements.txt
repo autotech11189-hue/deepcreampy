@@ -1,3 +1,6 @@
 fastapi
 uvicorn
 pydantic
+Pillow
+numpy
+git+https://github.com/Deepshift/DeepCreamPy.git@master#egg=lib-cream-py&subdirectory=lib-cream-py

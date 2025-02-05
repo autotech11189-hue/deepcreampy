@@ -18,7 +18,6 @@ class ConvNN(Layer):
         self.conv2 = Conv2D(dims2, (k_size, k_size), strides=(1, 1), padding='valid', activation=None)
 
     def call(self, inputs, training=False):
-        print(inputs)
         x = tf.pad(inputs, [[0, 0], [1, 1], [1, 1], [0, 0]], "REFLECT")
         x = self.conv1(x)
         x = tf.nn.elu(x)
@@ -45,7 +44,6 @@ class Decoder(Model):
         self.final_conv = Conv2D(3, (3, 3), strides=(1, 1), padding='same', activation=None)
 
     def call(self, inputs, training=False):
-        print(inputs)
         x = self.dl1(inputs)
         x = self.dl2(x)
         x = self.dl3(x)
