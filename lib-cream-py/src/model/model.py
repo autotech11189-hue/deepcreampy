@@ -30,6 +30,7 @@ class InpaintNN:
             exit(-1)
 
     def train(self, epochs: int, dataset):
+        #todo: make class based & have different response shapes for training & execution
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         MASK = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
