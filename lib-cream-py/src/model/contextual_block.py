@@ -24,9 +24,16 @@ def softmax(x):
 class ContextualBlock(Model):
     def __init__(self, k_size, lamda, stride=1, name=str):
         super(ContextualBlock, self).__init__(name=name)
+        self.conv_layer = None
         self.k_size = k_size
         self.lamda = lamda
         self.stride = stride
+
+    def build(self, input_shape):
+        bg_in, fg_in, mask = input_shape
+
+        b, h, w, dims = mask
+        self.conv_layer = Conv2D(dims, (1, 1), padding="valid", name="ML")
 
     def call(self, inputs):
         bg_in, fg_in, mask = inputs
@@ -90,7 +97,7 @@ class ContextualBlock(Model):
 
         # todo: move activation into conv2d?
         con1 = tf.concat([bg_in, ACL], axis=-1)
-        ACL2 = Conv2D(dims, (1, 1), padding="valid", name="ML")(con1)
+        ACL2 = self.conv_layer(con1)
         ACL2 = Activation('elu')(ACL2)
         return ACL2
 

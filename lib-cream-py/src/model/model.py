@@ -68,7 +68,7 @@ class InpaintNN:
         optimizer_G = optimizers.Adam(learning_rate=0.0001, beta_1=0.5,
                                             beta_2=0.9)  # .minimize(Loss_G, var_list=var_G)
 
-        model = Model(inputs=[X, Y, MASK], outputs=image_result)
+        model = Model(inputs=[X, Y, MASK], outputs=[image_result, I_ge, I_co])
         checkpoint_path = os.path.join(self.model_path, "model_checkpoint")
         checkpoint = tf.train.Checkpoint(generator=model, discriminator=disc_red, optimizer_G=optimizer_G,
                                          optimizer_D=optimizer_D)
@@ -81,7 +81,7 @@ class InpaintNN:
         @tf.function
         def train_step(real_images, y, masks):
             with tf.GradientTape() as tape_D, tf.GradientTape() as tape_G:
-                fake_images = model([real_images, y, masks], training=True)
+                fake_images, I_ge, I_co = model([real_images, y, masks], training=True)
 
                 D_real = disc_red(real_images)
                 D_fake = disc_red(fake_images)
@@ -128,7 +128,8 @@ class InpaintNN:
             exit(-1)
 
     def predict_image(self, censored, unused, mask):
-        return self.model(censored, unused, mask, training=False)
+        image_result, _, _ = self.model(censored, unused, mask, training=False)
+        return image_result
 
 
 if __name__ == "__main__":
