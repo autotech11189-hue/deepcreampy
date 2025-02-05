@@ -3,7 +3,6 @@ import os
 import tensorflow as tf
 from keras import Model, Input
 from keras.src import optimizers, layers
-from keras.src.layers import Lambda
 from keras.src.saving import load_model
 
 from .contextual_block import ContextualBlock
@@ -20,9 +19,7 @@ class InpaintNN:
         self.batch_size = batch_size
         self.model_path = model_path
         self.create_model = create_model
-        if create_model:
-            self.model = self.train()
-        else:
+        if not create_model:
             self.check_model_file()
             self.model = load_model(self.model_path)
 
@@ -32,7 +29,7 @@ class InpaintNN:
             print("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
             exit(-1)
 
-    def train(self):
+    def train(self, epochs: int, dataset):
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         MASK = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
@@ -54,19 +51,6 @@ class InpaintNN:
 
         # Discriminator
         disc_red = DiscriminatorRed(name='disc_red')
-        D_real_red = disc_red(Y)
-        D_fake_red = disc_red(image_result)
-
-        # Losses
-        loss_D = Lambda(
-            lambda t: tf.reduce_mean(tf.nn.relu(1 + t[0])) + tf.reduce_mean(tf.nn.relu(1 - t[1]))
-        )([D_fake_red, D_real_red])
-
-        loss_GAN = Lambda(lambda t: -tf.reduce_mean(t))(D_fake_red)
-
-        loss_s_re = Lambda(lambda t: tf.reduce_mean(tf.abs(t[0] - t[1])))([I_ge, Y])
-
-        loss_hat = Lambda(lambda t: tf.reduce_mean(tf.abs(t[0] - t[1])))([I_co, Y])
 
         # todo never used?
         # SSIM (Structural Similarity Index)
@@ -77,13 +61,6 @@ class InpaintNN:
         # ssim = tf.reduce_mean(tf.image.ssim(tf.cast(A_Y, tf.float32), tf.cast(B_Y, tf.float32), max_val=255.0))
 
         alpha = IT / 1000000
-        # todo loss_D, loss_G and optimizer_D, optimizer_G
-        # var_D = [v for v in tf.global_variables() if v.name.startswith('disc_red')]
-        # var_G = [v for v in tf.global_variables() if v.name.startswith('G_en') or v.name.startswith('G_de') or v.name.startswith('CB1')]
-        loss_G = 0.1 * loss_GAN + 10 * loss_s_re + 5 * (1 - alpha) * loss_hat
-
-        # var_D = [v for v in tf.global_variables() if v.name.startswith('d')]
-        # var_G = [v for v in tf.global_variables() if v.name.startswith('g') or v.name.starts_with('h')]
 
         # Optimizers
         optimizer_D = optimizers.Adam(learning_rate=0.0004, beta_1=0.5,
@@ -92,10 +69,53 @@ class InpaintNN:
                                             beta_2=0.9)  # .minimize(Loss_G, var_list=var_G)
 
         model = Model(inputs=[X, Y, MASK], outputs=image_result)
-        model.compile()
-        if os.path.exists(self.model_path):
-            self.load_checkpoint()
-        return model
+        checkpoint_path = os.path.join(self.model_path, "model_checkpoint")
+        checkpoint = tf.train.Checkpoint(generator=model, discriminator=disc_red, optimizer_G=optimizer_G,
+                                         optimizer_D=optimizer_D)
+        checkpoint_manager = tf.train.CheckpointManager(checkpoint, checkpoint_path, max_to_keep=3)
+
+        if checkpoint_manager.latest_checkpoint:
+            checkpoint.restore(checkpoint_manager.latest_checkpoint)
+            print(f"Checkpoint restored from {checkpoint_manager.latest_checkpoint}")
+
+        @tf.function
+        def train_step(real_images, y, masks):
+            with tf.GradientTape() as tape_D, tf.GradientTape() as tape_G:
+                fake_images = model([real_images, y, masks], training=True)
+
+                D_real = disc_red(real_images)
+                D_fake = disc_red(fake_images)
+
+                loss_D = tf.reduce_mean(tf.nn.relu(1 + D_fake)) + tf.reduce_mean(tf.nn.relu(1 - D_real))
+                loss_GAN = -tf.reduce_mean(D_fake)
+                loss_s_re = tf.reduce_mean(tf.abs(I_ge - real_images))
+                loss_hat = tf.reduce_mean(tf.abs(I_co - real_images))
+
+                loss_G = 0.1 * loss_GAN + 10 * loss_s_re + 5 * (1 - alpha) * loss_hat
+
+            # Compute gradients
+            grads_D = tape_D.gradient(loss_D, disc_red.trainable_variables)
+            grads_G = tape_G.gradient(loss_G, model.trainable_variables)
+
+            # Apply gradients
+            optimizer_D.apply_gradients(zip(grads_D, disc_red.trainable_variables))
+            optimizer_G.apply_gradients(zip(grads_G, model.trainable_variables))
+
+            return loss_D, loss_G
+
+        # Training loop
+        for epoch in range(epochs):
+            print(f"\nStart epoch {epoch}")
+
+            for step, (real_images, y, masks) in enumerate(dataset):
+                d_loss, g_loss = train_step(real_images, y, masks)
+
+                if step % 100 == 0:
+                    print(
+                        f"Step {step}: Discriminator Loss: {d_loss.numpy():.4f}, Generator Loss: {g_loss.numpy():.4f}")
+
+            checkpoint_manager.save()
+            print(f"Checkpoint saved at {checkpoint_manager.latest_checkpoint}")
 
     def load_checkpoint(self):
         checkpoint_path = tf.train.latest_checkpoint(self.model_path)
