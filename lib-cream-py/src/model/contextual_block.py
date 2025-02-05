@@ -32,7 +32,7 @@ class ContextualBlock(Model):
     def build(self, input_shape):
         bg_in, fg_in, mask = input_shape
 
-        b, h, w, dims = mask
+        b, h, w, dims = bg_in
         self.conv_layer = Conv2D(dims, (1, 1), padding="valid", name="ML")
 
     def call(self, inputs):
