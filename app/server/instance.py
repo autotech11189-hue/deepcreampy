@@ -2,7 +2,6 @@ import asyncio
 from asyncio import Event, Lock
 from typing import List, Optional, Callable
 
-import numpy as np
 from PIL import Image
 from pydantic import BaseModel
 
@@ -50,10 +49,10 @@ class ExecutorInstance(BaseModel):
             if mask.file:
                 mask_gen = lambda i, ori, colored: RawMask(apply_variant(get_img(mask.file), i))
             else:
-                mask_gen = lambda i, ori, colored: ColorMask(np.squeeze(colored if item.is_mosaic else ori, axis=0),
-                                                             rgb=mask.rgb)
-            await asyncio.to_thread(decensor_image_variations(self.model_mosaic if item.is_moasic else self.model_bar, img, img, mask_gen,
-                                      item.variations, item.is_moasic, save_image))
+                mask_gen = lambda i, ori, colored: ColorMask(colored if item.is_mosaic else ori, rgb=mask.rgb)
+            await asyncio.to_thread(
+                decensor_image_variations(self.model_mosaic if item.is_moasic else self.model_bar, img, img, mask_gen,
+                                          item.variations, item.is_moasic, save_image))
             sender(7, bytes(index))
 
 

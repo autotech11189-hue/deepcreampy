@@ -11,13 +11,13 @@ from util import apply_variant, image_to_array, expand_bounding, find_regions
 
 
 def test():
-    color_file_path = "../../decensor_input/mermaid_censored.png"
+    color_file_path = "../decensor_input/mermaid_censored.png"
     colored_img = Image.open(color_file_path)
     model = InpaintNN("", create_model=True)
     return
     is_mosaic = False
     save_image = lambda i, img: print(i, img)
-    mask_gen = lambda i, ori, colored: ColorMask(np.squeeze(colored if is_mosaic else ori, axis=0), rgb=(0, 1, 0)).display()
+    mask_gen = lambda i, ori, colored: ColorMask(colored if is_mosaic else ori, rgb=(0, 1, 0))
     decensor_image_variations(model, colored_img, colored_img, mask_gen, 1, False, save_image)
 
 

@@ -6,6 +6,7 @@ from PIL import Image
 from lib_cream_py import RawMask, ColorMask, decensor_image_variations
 from lib_cream_py.util import apply_variant
 
+
 class MaskInfo:
     def __init__(self, v: str):
         if v.startswith("rgb-"):
@@ -52,12 +53,10 @@ def process(path: str, out_path: str, mask: MaskInfo, model, variations: int, is
                 except Exception as e:
                     print("[ERROR] Failed to delete img: ", img.path)
     else:
-        import numpy as np
         for img in imgs:
             try:
                 save_image = lambda i, out_img: out_img.save(generate_out_path(out_path, img.path, i))
-                mask_gen = lambda i, ori, colored: ColorMask(np.squeeze(colored if is_mosaic else ori, axis=0),
-                                                             rgb=mask.rgb)
+                mask_gen = lambda i, ori, colored: ColorMask(colored if is_mosaic else ori, rgb=mask.rgb)
                 decensor_image_variations(model, img.img, img.img, mask_gen, variations, is_mosaic, save_image)
             except Exception as e:
                 print("[ERROR]", e)
