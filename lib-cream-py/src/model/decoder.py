@@ -3,7 +3,6 @@ import tensorflow as tf
 from keras import Layer, Model
 from keras.src.layers import Conv2D
 
-
 class ConvNN(Layer):
     def __init__(self, dims1, dims2, size1, size2, k_size=3):
         super(ConvNN, self).__init__()
@@ -14,17 +13,15 @@ class ConvNN(Layer):
         self.k_size = k_size
 
         # Define layers
-        self.conv1 = Conv2D(dims1, (k_size, k_size), strides=(1, 1), padding='valid', activation=None)
-        self.conv2 = Conv2D(dims2, (k_size, k_size), strides=(1, 1), padding='valid', activation=None)
+        self.conv1 = Conv2D(dims1, (k_size, k_size), strides=(1, 1), padding='valid', activation="elu")
+        self.conv2 = Conv2D(dims2, (k_size, k_size), strides=(1, 1), padding='valid', activation="elu")
 
     def call(self, inputs, training=False):
         x = tf.pad(inputs, [[0, 0], [1, 1], [1, 1], [0, 0]], "REFLECT")
         x = self.conv1(x)
-        x = tf.nn.elu(x)
 
         x = tf.pad(x, [[0, 0], [1, 1], [1, 1], [0, 0]], "REFLECT")
         x = self.conv2(x)
-        x = tf.nn.elu(x)
 
         # Resize output
         x = tf.image.resize(x, (self.size1, self.size2), method='nearest')

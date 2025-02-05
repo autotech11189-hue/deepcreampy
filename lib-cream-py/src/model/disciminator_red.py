@@ -37,7 +37,7 @@ class SNConv2D(Layer):
             trainable=False
         )
 
-    def call(self, inputs):
+    def call(self, inputs, training=False):
         return tf.nn.conv2d(inputs, filters=spectral_norm(self.w, self.u), strides=[1, self.stride, self.stride, 1],
                             padding='SAME') + self.b
 
@@ -53,6 +53,16 @@ class DiscriminatorRed(Model):
         self.conv5 = SNConv2D(256, 5, 2, 'l5')
         self.conv6 = SNConv2D(512, 5, 2, 'l6')
         self.dense = DenseRedSN('l7')
+
+    def build(self, input_shape):
+        #todo: dont hardcode dims
+        self.conv1.build(input_shape)
+        self.conv2.build((1, 128, 128, 64))
+        self.conv3.build((1, 64, 64, 128))
+        self.conv4.build((1, 32, 32, 256))
+        self.conv5.build((1, 16, 16, 256))
+        self.conv6.build((1, 8, 8, 256))
+        self.dense.build((1, 4, 4, 512))
 
     def call(self, inputs):
         x = self.conv1(inputs)
@@ -114,7 +124,7 @@ class DenseRedSN(Layer):
             for i in range(h * w)
         ]
 
-    def call(self, inputs):
+    def call(self, inputs, training=False):
         h, w, c = inputs.shape[1], inputs.shape[2], inputs.shape[3]
         sn_w_list = [spectral_norm(self.weight[i: i + 1, :, :, :], self.u[i])
                      for i in range(h * w)

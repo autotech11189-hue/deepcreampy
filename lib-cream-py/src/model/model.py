@@ -10,6 +10,7 @@ from .decoder import Decoder
 from .disciminator_red import DiscriminatorRed
 from .encoder import Encoder
 
+
 class InpaintNN:
     def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False):
         super(InpaintNN, self).__init__()
@@ -30,7 +31,7 @@ class InpaintNN:
             exit(-1)
 
     def train(self, epochs: int, dataset):
-        #todo: make class based & have different response shapes for training & execution
+        # todo: make class based & have different response shapes for training & execution
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         MASK = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
@@ -65,9 +66,9 @@ class InpaintNN:
 
         # Optimizers
         optimizer_D = optimizers.Adam(learning_rate=0.0004, beta_1=0.5,
-                                            beta_2=0.9)  # .minimize(Loss_D, var_list=var_D)
+                                      beta_2=0.9)  # .minimize(Loss_D, var_list=var_D)
         optimizer_G = optimizers.Adam(learning_rate=0.0001, beta_1=0.5,
-                                            beta_2=0.9)  # .minimize(Loss_G, var_list=var_G)
+                                      beta_2=0.9)  # .minimize(Loss_G, var_list=var_G)
 
         model = Model(inputs=[X, Y, MASK], outputs=[image_result, I_ge, I_co])
         checkpoint_path = os.path.join(self.model_path, "model_checkpoint")
@@ -117,6 +118,7 @@ class InpaintNN:
 
             checkpoint_manager.save()
             print(f"Checkpoint saved at {checkpoint_manager.latest_checkpoint}")
+        self.model = model
 
     def load_checkpoint(self):
         checkpoint_path = tf.train.latest_checkpoint(self.model_path)
@@ -129,7 +131,7 @@ class InpaintNN:
             exit(-1)
 
     def predict_image(self, censored, unused, mask):
-        image_result, _, _ = self.model(censored, unused, mask, training=False)
+        image_result, _, _ = self.model((censored, unused, mask), training=False)
         return image_result
 
 
