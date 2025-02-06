@@ -10,6 +10,30 @@ from .decoder import Decoder
 from .disciminator_red import DiscriminatorRed
 from .encoder import Encoder
 
+class InpaintModel(Model):
+    def __init__(self, input_height=256, input_width=256, **kwargs):
+        super(InpaintModel, self).__init__(name="", **kwargs)
+        self.input_height = input_height
+        self.input_width = input_width
+        self.encoder = Encoder(name='G_en')
+        self.cb1 = ContextualBlock(name='CB1', k_size=3, lamda=50.0, stride=1)
+        self.decoder = Decoder(name='G_de', size1=self.input_height, size2=self.input_height)
+
+    def call(self, inputs, training=False):
+        X, Y, MASK = inputs
+        input_tensor = layers.Concatenate(axis=-1)([X, MASK])
+        vec_en = self.encoder(input_tensor)
+        vec_con = self.cb1((vec_en, vec_en, MASK))
+
+        I_co = self.decoder(vec_en)
+        I_ge = self.decoder(vec_con)
+
+        image_result = I_ge * (1 - MASK) + Y * MASK
+        if training:
+            return image_result, I_ge, I_co
+        else:
+            return image_result
+
 
 class InpaintNN:
     def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False):
@@ -148,18 +172,7 @@ class InpaintNN:
         # todo: unclear
         IT = 0
 
-        # Model layers
-        input_tensor = layers.Concatenate(axis=-1)([X, MASK])
-        encoder = Encoder(name='G_en')
-        vec_en = encoder(input_tensor)
-        cb1 = ContextualBlock(name='CB1', k_size=3, lamda=50.0, stride=1)
-        vec_con = cb1((vec_en, vec_en, MASK))
-
-        decoder = Decoder(name='G_de', size1=self.input_height, size2=self.input_height)
-        I_co = decoder(vec_en)
-        I_ge = decoder(vec_con)
-
-        image_result = I_ge * (1 - MASK) + Y * MASK
+        output = InpaintModel(self.input_height, self.input_width)((X, Y, MASK))
 
         # Discriminator
         disc_red = DiscriminatorRed(name='disc_red')
@@ -180,7 +193,8 @@ class InpaintNN:
         optimizer_G = optimizers.Adam(learning_rate=0.0001, beta_1=0.5,
                                       beta_2=0.9)  # .minimize(Loss_G, var_list=var_G)
 
-        model = Model(inputs=[X, Y, MASK], outputs=[image_result, I_ge, I_co])
+        model = Model(inputs=[X, Y, MASK], outputs=[output])
+
         checkpoint = tf.train.Checkpoint(generator=model, discriminator=disc_red, optimizer_G=optimizer_G,
                                          optimizer_D=optimizer_D)
         checkpoint_manager = tf.train.CheckpointManager(checkpoint, checkpoint_path, max_to_keep=3)
@@ -259,7 +273,7 @@ class InpaintNN:
             exit(-1)
 
     def predict_image(self, censored, unused, mask):
-        image_result, _, _ = self.model((censored, unused, mask), training=False)
+        image_result = self.model((censored, unused, mask), training=False)
         return image_result
 
 
