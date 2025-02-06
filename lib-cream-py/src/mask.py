@@ -57,19 +57,22 @@ class ColorMask(Mask):
                 arr = np.array(arr / 255.0)
         else:
             raise TypeError("Expected image to be a PIL Image or a NumPy ndarray")
-        self.image = arr
+        self.mask = self.find_mask_logic()
 
-    def find_mask_simple(self):
+    def find_mask_logic(self, image):
         """
         return AxB with values from [0, 1] 1 is found
         """
-        m = np.zeros(self.image.shape[:2], np.uint8)
-        i, j = np.where(np.all(self.image == self.color, axis=-1))
+        m = np.zeros(image.shape[:2], np.uint8)
+        i, j = np.where(np.all(image == self.color, axis=-1))
 
         if len(i) > 0:
             m[i, j] = 1
 
         return m
+
+    def find_mask_simple(self):
+        return self.mask
 
     def find_mask(self) -> ndarray:
         """
@@ -86,6 +89,7 @@ class RawMask(ColorMask):
         """
         :param image: ndarray = AxBx3 or AxBx1 or AxB. values should be in the range [0, 1]
         """
+        #todo: allow grayscale instead of black & white
         super().__init__(image, (0, 0, 0) if mask_black else (1, 1, 1))
 
 

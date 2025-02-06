@@ -47,7 +47,6 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
 
     ori_array = image_to_array(ori)
     ori_array = np.expand_dims(ori_array, axis=0)
-    #todo: mask computed twice
     mask_arr = mask.find_mask_simple()
     mask_img_big = mask.display()
 
