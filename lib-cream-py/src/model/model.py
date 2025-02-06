@@ -31,7 +31,116 @@ class InpaintNN:
             print("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
             exit(-1)
 
-    def train(self, epochs: int, dataset, checkpoint_path:str):
+    def migrate_weights(self):
+        model_path = '../models/mosaic/Train_290000'
+        model_path =  '../models/bar/Train_775000'
+        reader = tf.compat.v1.train.NewCheckpointReader(model_path)
+        variable_map = reader.get_variable_to_shape_map()
+        lookup_model = {
+            'G_en/conv2d/kernel': 'G_en/Conv/weights',
+            'G_en/conv2d/bias': 'G_en/Conv/biases',
+            'G_en/conv2d_1/kernel': 'G_en/Conv_1/weights',
+            'G_en/conv2d_1/bias': 'G_en/Conv_1/biases',
+            'G_en/conv2d_2/kernel': 'G_en/Conv_2/weights',
+            'G_en/conv2d_2/bias': 'G_en/Conv_2/biases',
+            'G_en/conv2d_3/kernel': 'G_en/Conv_3/weights',
+            'G_en/conv2d_3/bias': 'G_en/Conv_3/biases',
+            'G_en/conv2d_4/kernel': 'G_en/Conv_4/weights',
+            'G_en/conv2d_4/bias': 'G_en/Conv_4/biases',
+            'G_en/conv2d_5/kernel': 'G_en/Conv_5/weights',
+            'G_en/conv2d_5/bias': 'G_en/Conv_5/biases',
+            'G_en/conv2d_6/kernel': 'G_en/Conv_6/weights',
+            'G_en/conv2d_6/bias': 'G_en/Conv_6/biases',
+            'G_en/conv2d_7/kernel': 'G_en/Conv_7/weights',
+            'G_en/conv2d_7/bias': 'G_en/Conv_7/biases',
+            'G_en/conv2d_8/kernel': 'G_en/Conv_8/weights',
+            'G_en/conv2d_8/bias': 'G_en/Conv_8/biases',
+            'G_en/conv2d_9/kernel': 'G_en/Conv_9/weights',
+            'G_en/conv2d_9/bias': 'G_en/Conv_9/biases',
+            'G_de/conv_nn/conv2d_10/kernel': 'G_de/Conv/weights',
+            'G_de/conv_nn/conv2d_10/bias': 'G_de/Conv/biases',
+            'G_de/conv_nn/conv2d_11/kernel': 'G_de/Conv_1/weights',
+            'G_de/conv_nn/conv2d_11/bias': 'G_de/Conv_1/biases',
+            'G_de/conv_nn_1/conv2d_12/kernel': 'G_de/Conv_2/weights',
+            'G_de/conv_nn_1/conv2d_12/bias': 'G_de/Conv_2/biases',
+            'G_de/conv_nn_1/conv2d_13/kernel': 'G_de/Conv_3/weights',
+            'G_de/conv_nn_1/conv2d_13/bias': 'G_de/Conv_3/biases',
+            'G_de/conv_nn_2/conv2d_14/kernel': 'G_de/Conv_4/weights',
+            'G_de/conv_nn_2/conv2d_14/bias': 'G_de/Conv_4/biases',
+            'G_de/conv_nn_2/conv2d_15/kernel': 'G_de/Conv_5/weights',
+            'G_de/conv_nn_2/conv2d_15/bias': 'G_de/Conv_5/biases',
+            'G_de/conv_nn_3/conv2d_16/kernel': 'G_de/Conv_6/weights',
+            'G_de/conv_nn_3/conv2d_16/bias': 'G_de/Conv_6/biases',
+            'G_de/conv_nn_3/conv2d_17/kernel': 'G_de/Conv_7/weights',
+            'G_de/conv_nn_3/conv2d_17/bias': 'G_de/Conv_7/biases',
+            'G_de/conv2d_18/kernel': 'G_de/Conv_8/weights',
+            'G_de/conv2d_18/bias': 'G_de/Conv_8/biases',
+            'CB1/ML/kernel': 'CB1/ML/weights',
+            'CB1/ML/bias': 'CB1/ML/biases'
+        }
+        lookup_disc = {
+            'disc_red/l1/w': 'disc_red/l1w',
+            'disc_red/l1/b': 'disc_red/l1b',
+            'disc_red/l1/wu': 'disc_red/l1wu',
+            'disc_red/l2/w': 'disc_red/l2w',
+            'disc_red/l2/b': 'disc_red/l2b',
+            'disc_red/l2/wu': 'disc_red/l2wu',
+            'disc_red/l3/w': 'disc_red/l3w',
+            'disc_red/l3/b': 'disc_red/l3b',
+            'disc_red/l3/wu': 'disc_red/l3wu',
+            'disc_red/l4/w': 'disc_red/l4w',
+            'disc_red/l4/b': 'disc_red/l4b',
+            'disc_red/l4/wu': 'disc_red/l4wu',
+            'disc_red/l5/w': 'disc_red/l5w',
+            'disc_red/l5/b': 'disc_red/l5b',
+            'disc_red/l5/wu': 'disc_red/l5wu',
+            'disc_red/l6/w': 'disc_red/l6w',
+            'disc_red/l6/b': 'disc_red/l6b',
+            'disc_red/l6/wu': 'disc_red/l6wu',
+            'disc_red/l7/_w': 'disc_red/l7_w',
+            'disc_red/l7/_b': 'disc_red/l7_b',
+            'disc_red/l7/w_0u': 'disc_red/l7w_0u',
+            'disc_red/l7/w_1u': 'disc_red/l7w_1u',
+            'disc_red/l7/w_2u': 'disc_red/l7w_2u',
+            'disc_red/l7/w_3u': 'disc_red/l7w_3u',
+            'disc_red/l7/w_4u': 'disc_red/l7w_4u',
+            'disc_red/l7/w_5u': 'disc_red/l7w_5u',
+            'disc_red/l7/w_6u': 'disc_red/l7w_6u',
+            'disc_red/l7/w_7u': 'disc_red/l7w_7u',
+            'disc_red/l7/w_8u': 'disc_red/l7w_8u',
+            'disc_red/l7/w_9u': 'disc_red/l7w_9u',
+            'disc_red/l7/w_10u': 'disc_red/l7w_10u',
+            'disc_red/l7/w_11u': 'disc_red/l7w_11u',
+            'disc_red/l7/w_12u': 'disc_red/l7w_12u',
+            'disc_red/l7/w_13u': 'disc_red/l7w_13u',
+            'disc_red/l7/w_14u': 'disc_red/l7w_14u',
+            'disc_red/l7/w_15u': 'disc_red/l7w_15u'
+        }
+        variable_map = dict([(name, variable_map[name]) for name in variable_map if not name.__contains__("Adam")])
+
+        for var in self.model.variables:
+            old_name = lookup_model[var.path]
+            old_shape = variable_map.pop(old_name)
+            assert old_shape == var.shape
+            v = reader.get_tensor(old_name)
+            var.assign(v)
+        for var in self.disc_red.variables:
+            old_name = lookup_disc[var.path]
+            old_shape = variable_map.pop(old_name)
+            assert old_shape == var.shape
+            v = reader.get_tensor(old_name)
+            var.assign(v)
+        variable_map.pop('beta1_power')
+        variable_map.pop('beta2_power')
+        variable_map.pop('beta1_power_1')
+        variable_map.pop('beta2_power_1')
+        if len(variable_map) != 0:
+            import pprint
+            pprint.pprint(variable_map)
+            raise Exception("Variable map is not empty")
+        self.model.save(self.model_path)
+
+    def train(self, epochs: int, dataset, checkpoint_path: str):
         # todo: make class based & have different response shapes for training & execution
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
@@ -137,7 +246,7 @@ class InpaintNN:
             new_name_map[checkpoint_name] = var_name
         self.new_name_map = new_name_map
         self.model = model
-
+        self.disc_red = disc_red
 
     def load_checkpoint(self):
         checkpoint_path = tf.train.latest_checkpoint(self.model_path)

@@ -13,10 +13,9 @@ from util import apply_variant, image_to_array, expand_bounding, find_regions
 def test():
     color_file_path = "../decensor_input/mermaid_censored.png"
     colored_img = Image.open(color_file_path)
-    model = InpaintNN("", create_model=True)
-    return
+    model = InpaintNN("./temp/model.keras")
     is_mosaic = False
-    save_image = lambda i, img: print(i, img)
+    save_image = lambda i, img: img.save("output.png")
     mask_gen = lambda i, ori, colored: ColorMask(colored if is_mosaic else ori, rgb=(0, 1, 0))
     decensor_image_variations(model, colored_img, colored_img, mask_gen, 1, False, save_image)
 
@@ -123,6 +122,18 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
 
     return Image.fromarray(output_img_array.astype('uint8'))
 
+def train():
+    y = np.load("y.npy").astype(np.float32)
+    x = np.load("x.npy").astype(np.float32)
+    mask = np.load("mask.npy").astype(np.float32)
+    model = InpaintNN("./temp/model.keras", create_model=True)
+    model.train(0, [(y, y, mask)], "./temp/checkpoints")
+    model.migrate_weights()
+    #img = model.predict_image(x, x, mask)
+    #img = np.squeeze(img, axis=0)
+    #img = (255.0 * ((img + 1.0) / 2.0)).astype(np.uint8)
+    #img = Image.fromarray(img.astype('uint8'))
+    #img.save("example1.png")
 
 if __name__ == "__main__":
     test()

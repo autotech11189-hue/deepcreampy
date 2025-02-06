@@ -47,7 +47,7 @@ class ContextualBlock(Layer):
         bg_in, fg_in, mask = input_shape
 
         b, h, w, dims = bg_in
-        self.conv_layer = Conv2D(dims, (1, 1), padding="valid", name="ML")
+        self.conv_layer = Conv2D(dims, (1, 1), padding="valid", name="ML", activation="elu")
 
     def call(self, inputs):
         bg_in, fg_in, mask = inputs
@@ -109,10 +109,8 @@ class ContextualBlock(Layer):
 
         ACL = bg + ACL * (1.0 - mask_r)
 
-        # todo: move activation into conv2d?
         con1 = tf.concat([bg_in, ACL], axis=-1)
         ACL2 = self.conv_layer(con1)
-        ACL2 = Activation('elu')(ACL2)
         return ACL2
 
 

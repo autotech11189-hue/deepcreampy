@@ -5,7 +5,7 @@ from keras.src.initializers import TruncatedNormal
 
 class SNConv2D(Layer):
     def __init__(self, output_dim, kernel_size, stride, name: str, **kwargs):
-        super(SNConv2D, self).__init__(**kwargs)
+        super(SNConv2D, self).__init__(name=name, **kwargs)
         self.u = None
         self.stride = stride
         self.b = None
@@ -34,21 +34,21 @@ class SNConv2D(Layer):
         c = input_shape[3]
 
         self.w = self.add_weight(
-            name=self.name + 'w',
+            name='w',
             shape=(self.kernel_size, self.kernel_size, c, self.output_dim),
             initializer="glorot_uniform",
             trainable=True,
         )
 
         self.b = self.add_weight(
-            name=self.name + 'b',
+            name='b',
             shape=(self.output_dim,),
             initializer=tf.zeros_initializer(),
             trainable=True,
         )
 
         self.u = self.add_weight(
-            name=self.name + 'w',
+            name='wu',
             shape=[1, self.w.shape[-1]], initializer=TruncatedNormal,
             trainable=False
         )
@@ -112,7 +112,7 @@ class DiscriminatorRed(Model):
 
 class DenseRedSN(Layer):
     def __init__(self, name: str, **kwargs):
-        super(DenseRedSN, self).__init__(**kwargs)
+        super(DenseRedSN, self).__init__(name=name, **kwargs)
         self.u = None
         self.bias = None
         self.weight = None
@@ -122,20 +122,20 @@ class DenseRedSN(Layer):
         h, w, c = input_shape[1], input_shape[2], input_shape[3]
 
         self.weight = self.add_weight(
-            name=self.name + "_w",
+            name="_w",
             shape=[h * w, 1, c, 1],
             initializer="glorot_uniform",
             trainable=True
         )
 
         self.bias = self.add_weight(
-            name=self.name + "_b",
+            name="_b",
             shape=[1, h, w, 1],
             initializer="zeros",
             trainable=True
         )
         self.u = [
-            self.add_weight(name=f"{self.name}w_{i}u", shape=[1, self.weight.shape[-1]], initializer=TruncatedNormal,
+            self.add_weight(name=f"w_{i}u", shape=[1, self.weight.shape[-1]], initializer=TruncatedNormal,
                             trainable=False)
             for i in range(h * w)
         ]
