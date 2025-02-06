@@ -57,7 +57,7 @@ class ColorMask(Mask):
                 arr = np.array(arr / 255.0)
         else:
             raise TypeError("Expected image to be a PIL Image or a NumPy ndarray")
-        self.mask = self.find_mask_logic()
+        self.mask = self.find_mask_logic(arr)
 
     def find_mask_logic(self, image):
         """
