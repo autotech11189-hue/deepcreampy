@@ -15,6 +15,7 @@ class InpaintNN:
     def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False):
         super(InpaintNN, self).__init__()
 
+        self.new_name_map = None
         self.input_height = input_height
         self.input_width = input_width
         self.batch_size = batch_size
@@ -30,7 +31,7 @@ class InpaintNN:
             print("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
             exit(-1)
 
-    def train(self, epochs: int, dataset):
+    def train(self, epochs: int, dataset, checkpoint_path:str):
         # todo: make class based & have different response shapes for training & execution
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
@@ -71,7 +72,6 @@ class InpaintNN:
                                       beta_2=0.9)  # .minimize(Loss_G, var_list=var_G)
 
         model = Model(inputs=[X, Y, MASK], outputs=[image_result, I_ge, I_co])
-        checkpoint_path = os.path.join(self.model_path, "model_checkpoint")
         checkpoint = tf.train.Checkpoint(generator=model, discriminator=disc_red, optimizer_G=optimizer_G,
                                          optimizer_D=optimizer_D)
         checkpoint_manager = tf.train.CheckpointManager(checkpoint, checkpoint_path, max_to_keep=3)
@@ -118,7 +118,26 @@ class InpaintNN:
 
             checkpoint_manager.save()
             print(f"Checkpoint saved at {checkpoint_manager.latest_checkpoint}")
+
+        if epochs == 0:
+            optimizer_G.build(model.trainable_variables)
+            disc_red.build((None, 256, 256, 3))
+            optimizer_D.build(disc_red.trainable_variables)
+        else:
+            model.save(self.model_path)
+        optimizer_G_vars = [x.path for x in optimizer_G.variables]
+        optimizer_D_vars = [x.path for x in optimizer_D.variables]
+        new_name_map = {}
+        for i, var_name in enumerate(optimizer_G_vars):
+            checkpoint_name = f"(root).optimizer_G._variables.{i}"
+            new_name_map[checkpoint_name] = var_name
+
+        for i, var_name in enumerate(optimizer_D_vars):
+            checkpoint_name = f"(root).optimizer_D._variables.{i}"
+            new_name_map[checkpoint_name] = var_name
+        self.new_name_map = new_name_map
         self.model = model
+
 
     def load_checkpoint(self):
         checkpoint_path = tf.train.latest_checkpoint(self.model_path)

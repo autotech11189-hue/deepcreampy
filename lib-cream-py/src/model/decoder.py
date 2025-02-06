@@ -3,9 +3,10 @@ import tensorflow as tf
 from keras import Layer, Model
 from keras.src.layers import Conv2D
 
+
 class ConvNN(Layer):
-    def __init__(self, dims1, dims2, size1, size2, k_size=3):
-        super(ConvNN, self).__init__()
+    def __init__(self, dims1, dims2, size1, size2, k_size=3, **kwargs):
+        super(ConvNN, self).__init__(**kwargs)
         self.dims1 = dims1
         self.dims2 = dims2
         self.size1 = size1
@@ -15,6 +16,24 @@ class ConvNN(Layer):
         # Define layers
         self.conv1 = Conv2D(dims1, (k_size, k_size), strides=(1, 1), padding='valid', activation="elu")
         self.conv2 = Conv2D(dims2, (k_size, k_size), strides=(1, 1), padding='valid', activation="elu")
+
+    def get_config(self):
+        base_config = super().get_config()
+        config = {
+            "dims1": self.dims1,
+            "dims2": self.dims2,
+            "size1": self.size1,
+            "size2": self.size2,
+        }
+        return {**base_config, **config}
+
+    @classmethod
+    def from_config(cls, config):
+        size1 = config.pop("size1")
+        size2 = config.pop("size2")
+        dims1 = config.pop("dims1")
+        dims2 = config.pop("dims2")
+        return cls(dims1, dims2, size1, size2, **config)
 
     def call(self, inputs, training=False):
         x = tf.pad(inputs, [[0, 0], [1, 1], [1, 1], [0, 0]], "REFLECT")
@@ -28,9 +47,9 @@ class ConvNN(Layer):
         return x
 
 
-class Decoder(Model):
-    def __init__(self, size1, size2, name: str):
-        super(Decoder, self).__init__(name=name)
+class Decoder(Layer):
+    def __init__(self, size1, size2, name: str, **kwargs):
+        super(Decoder, self).__init__(name=name, **kwargs)
         self.size1 = size1
         self.size2 = size2
         self.name = name
@@ -39,6 +58,20 @@ class Decoder(Model):
         self.dl3 = ConvNN(32, 32, int(size1), int(size2))
         self.dl4 = ConvNN(16, 16, int(size1), int(size2))
         self.final_conv = Conv2D(3, (3, 3), strides=(1, 1), padding='same', activation=None)
+
+    def get_config(self):
+        base_config = super().get_config()
+        config = {
+            "size1": self.size1,
+            "size2": self.size2,
+        }
+        return {**base_config, **config}
+
+    @classmethod
+    def from_config(cls, config):
+        size1 = config.pop("size1")
+        size2 = config.pop("size2")
+        return cls(size1, size2, **config)
 
     def call(self, inputs, training=False):
         x = self.dl1(inputs)

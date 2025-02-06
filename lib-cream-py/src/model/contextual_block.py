@@ -1,5 +1,5 @@
 import tensorflow as tf
-from keras import Model
+from keras import Layer
 from keras.src.layers import Conv2D, Activation
 
 
@@ -21,13 +21,27 @@ def softmax(x):
     return exp_x / tf.reduce_sum(exp_x, axis=-1, keepdims=True)
 
 
-class ContextualBlock(Model):
-    def __init__(self, k_size, lamda, stride=1, name=str):
-        super(ContextualBlock, self).__init__(name=name)
+class ContextualBlock(Layer):
+    def __init__(self, k_size, lamda, stride=1, name=str, **kwargs):
+        super(ContextualBlock, self).__init__(name=name, **kwargs)
         self.conv_layer = None
         self.k_size = k_size
         self.lamda = lamda
         self.stride = stride
+
+    def get_config(self):
+        base_config = super().get_config()
+        config = {
+            "k_size": self.k_size,
+            "lamda": self.lamda,
+        }
+        return {**base_config, **config}
+
+    @classmethod
+    def from_config(cls, config):
+        k_size = config.pop("k_size")
+        lamda = config.pop("lamda")
+        return cls(k_size, lamda, **config)
 
     def build(self, input_shape):
         bg_in, fg_in, mask = input_shape

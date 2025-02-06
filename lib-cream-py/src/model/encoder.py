@@ -8,8 +8,8 @@ def reflect_pad(x, pad_size):
 
 
 class Encoder(Model):
-    def __init__(self, name: str):
-        super(Encoder, self).__init__()
+    def __init__(self, name: str, **kwargs):
+        super(Encoder, self).__init__(**kwargs)
         self.name = name
 
         # Define convolutional layers

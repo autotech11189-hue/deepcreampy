@@ -4,8 +4,8 @@ from keras.src.initializers import TruncatedNormal
 
 
 class SNConv2D(Layer):
-    def __init__(self, output_dim, kernel_size, stride, name: str):
-        super(SNConv2D, self).__init__()
+    def __init__(self, output_dim, kernel_size, stride, name: str, **kwargs):
+        super(SNConv2D, self).__init__(**kwargs)
         self.u = None
         self.stride = stride
         self.b = None
@@ -13,6 +13,22 @@ class SNConv2D(Layer):
         self.output_dim = output_dim
         self.kernel_size = kernel_size
         self.name = name
+
+    def get_config(self):
+        base_config = super().get_config()
+        config = {
+            "output_dim":self.output_dim,
+            "kernel_size": self.kernel_size,
+            "stride": self.stride,
+        }
+        return {**base_config, **config}
+
+    @classmethod
+    def from_config(cls, config):
+        output_dim = config.pop("output_dim")
+        kernel_size = config.pop("kernel_size")
+        stride = config.pop("stride")
+        return cls(output_dim, kernel_size, stride, **config)
 
     def build(self, input_shape):
         c = input_shape[3]
@@ -43,8 +59,8 @@ class SNConv2D(Layer):
 
 
 class DiscriminatorRed(Model):
-    def __init__(self, name=str):
-        super(DiscriminatorRed, self).__init__(name=name)
+    def __init__(self, name=str, **kwargs):
+        super(DiscriminatorRed, self).__init__(name=name, **kwargs)
 
         self.conv1 = SNConv2D(64, 5, 2, 'l1')
         self.conv2 = SNConv2D(128, 5, 2, 'l2')
@@ -55,7 +71,7 @@ class DiscriminatorRed(Model):
         self.dense = DenseRedSN('l7')
 
     def build(self, input_shape):
-        #todo: dont hardcode dims
+        # todo: dont hardcode dims
         self.conv1.build(input_shape)
         self.conv2.build((1, 128, 128, 64))
         self.conv3.build((1, 64, 64, 128))
@@ -95,8 +111,8 @@ class DiscriminatorRed(Model):
 
 
 class DenseRedSN(Layer):
-    def __init__(self, name: str):
-        super(DenseRedSN, self).__init__()
+    def __init__(self, name: str, **kwargs):
+        super(DenseRedSN, self).__init__(**kwargs)
         self.u = None
         self.bias = None
         self.weight = None
