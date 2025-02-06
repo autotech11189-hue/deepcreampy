@@ -13,14 +13,15 @@ from util import apply_variant, image_to_array, expand_bounding, find_regions
 def test():
     color_file_path = "../decensor_input/mermaid_censored.png"
     colored_img = Image.open(color_file_path)
-    model = InpaintNN("./temp/model.keras")
+    model = InpaintNN("../models/bar.keras")
     is_mosaic = False
     save_image = lambda i, img: img.save("output.png")
     mask_gen = lambda i, ori, colored: ColorMask(colored if is_mosaic else ori, rgb=(0, 1, 0))
     decensor_image_variations(model, colored_img, colored_img, mask_gen, 1, False, save_image)
 
 
-def decensor_image_variations(model: InpaintNN, ori: Image, colored: Image, mask_gen: Callable[[int, Image, Image], Mask],
+def decensor_image_variations(model: InpaintNN, ori: Image, colored: Image,
+                              mask_gen: Callable[[int, Image, Image], Mask],
                               variations: int, is_mosaic: bool, callback: Callable[[int, Image], None]):
     for i in range(variations):
         ori = apply_variant(ori, i)
@@ -48,7 +49,7 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
     ori_array = np.expand_dims(ori_array, axis=0)
     #todo: mask computed twice
     mask_arr = mask.find_mask_simple()
-    mask_img = mask.display()
+    mask_img_big = mask.display()
 
     # colored image is only used for finding the regions
     regions = find_regions(colored.convert('RGB'), mask_arr)
@@ -63,13 +64,15 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
         crop_img = ori.crop(bounding_box)
 
         # resize the cropped images
-        crop_img = crop_img.resize((256, 256))
+        crop_img = crop_img.resize((256, 256), resample=Image.Resampling.NEAREST)
         crop_img_array = image_to_array(crop_img)
 
         # resize the mask images
         mask_img = mask_img.crop(bounding_box)
         mask_img = mask_img.resize((256, 256))
 
+        mask_img = mask_img_big.crop(bounding_box)
+        mask_img = mask_img.resize((256, 256), resample=Image.Resampling.NEAREST)
         # convert mask_img back to array
         mask_array = image_to_array(mask_img)
         # the mask has been upscaled so there will be values not equal to 0 or 1
