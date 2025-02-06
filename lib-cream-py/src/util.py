@@ -3,6 +3,8 @@ import numpy as np
 from PIL import Image
 from numpy import ndarray
 
+from logger import Logger
+
 
 def is_on_mask(cords, mask: ndarray):
     x, y = cords
@@ -49,7 +51,7 @@ def image_to_array(image: Image):
 
 
 # risk of box being bigger than the image
-def expand_bounding(img: Image, region, expand_factor=1.5, min_size=256):
+def expand_bounding(img: Image, region, expand_factor=1.5, min_size=256, logger=Logger()):
     # expand bounding box to capture more context
     x, y = zip(*region)
     min_x, min_y, max_x, max_y = min(x), min(y), max(x), max(y)
@@ -125,8 +127,7 @@ def expand_bounding(img: Image, region, expand_factor=1.5, min_size=256):
     # if bounding box goes outside of the image for some reason, set bounds to original, unexpanded values
     # print(width, height)
     if x2_square > width or y2_square > height:
-        print("bounding box out of bounds!")
-        print(x1_square, y1_square, x2_square, y2_square)
+        logger.error("bounding-box-out-of-bounds", (x1_square, y1_square, x2_square, y2_square))
         x1_square, y1_square, x2_square, y2_square = min_x, min_y, max_x, max_y
     return x1_square, y1_square, x2_square, y2_square
 

@@ -97,4 +97,3 @@ if __name__ == '__main__':
     img = Image.open('../../decensor_input/mermaid_censored.png')
     mask = ColorMask(img, (0, 1, 0)).display()
     mask2 = RawMask(mask, mask_black=True).find_mask()
-    print(mask2.shape)

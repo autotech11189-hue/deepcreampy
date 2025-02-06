@@ -5,6 +5,7 @@ from keras import Model, Input
 from keras.src import optimizers, layers
 from keras.src.saving import load_model
 
+from logger import Logger
 from .contextual_block import ContextualBlock
 from .decoder import Decoder
 from .disciminator_red import DiscriminatorRed
@@ -36,7 +37,7 @@ class InpaintModel(Model):
 
 
 class InpaintNN:
-    def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False):
+    def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False, logger=Logger()):
         super(InpaintNN, self).__init__()
 
         self.new_name_map = None
@@ -45,14 +46,15 @@ class InpaintNN:
         self.batch_size = batch_size
         self.model_path = model_path
         self.create_model = create_model
+        self.logger = logger
         if not create_model:
             self.check_model_file()
             self.model = load_model(self.model_path)
 
     def check_model_file(self):
         if not os.path.exists(self.model_path):
-            print("\nMissing Model, download model")
-            print("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
+            self.logger.error("\nMissing Model, download model")
+            self.logger.error("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
             exit(-1)
 
     def migrate_weights(self):
@@ -200,7 +202,7 @@ class InpaintNN:
 
         if checkpoint_manager.latest_checkpoint:
             checkpoint.restore(checkpoint_manager.latest_checkpoint)
-            print(f"Checkpoint restored from {checkpoint_manager.latest_checkpoint}")
+            self.logger.debug(f"Checkpoint restored from {checkpoint_manager.latest_checkpoint}")
 
         @tf.function
         def train_step(real_images, y, masks):
@@ -229,17 +231,17 @@ class InpaintNN:
 
         # Training loop
         for epoch in range(epochs):
-            print(f"\nStart epoch {epoch}")
+            self.logger.info(f"\nStart epoch {epoch}")
 
             for step, (real_images, y, masks) in enumerate(dataset):
                 d_loss, g_loss = train_step(real_images, y, masks)
 
                 if step % 100 == 0:
-                    print(
+                    self.logger.info(
                         f"Step {step}: Discriminator Loss: {d_loss.numpy():.4f}, Generator Loss: {g_loss.numpy():.4f}")
 
             checkpoint_manager.save()
-            print(f"Checkpoint saved at {checkpoint_manager.latest_checkpoint}")
+            self.logger.info(f"Checkpoint saved at {checkpoint_manager.latest_checkpoint}")
 
         if epochs == 0:
             optimizer_G.build(model.trainable_variables)
@@ -266,9 +268,9 @@ class InpaintNN:
 
         if checkpoint_path:
             self.model.load_weights(checkpoint_path)
-            print(f"Model restored from {checkpoint_path}")
+            self.logger.info(f"Model restored from {checkpoint_path}")
         else:
-            print("\nNo checkpoint found")
+            self.logger.warn("\nNo checkpoint found")
             exit(-1)
 
     def predict_image(self, censored, unused, mask):
