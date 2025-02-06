@@ -3,8 +3,7 @@ from typing import List, Tuple
 
 from PIL import Image
 
-from lib_cream_py import RawMask, ColorMask, decensor_image_variations
-from lib_cream_py.util import apply_variant
+from lib_cream_py import RawMask, ColorMask, decensor_image_variations, apply_variant
 
 
 class MaskInfo:

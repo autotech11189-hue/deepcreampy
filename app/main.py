@@ -1,4 +1,4 @@
-from app.local import MaskInfo
+from local import MaskInfo
 from config import get_args
 from lib_cream_py import InpaintNN
 
@@ -6,7 +6,7 @@ if __name__ == '__main__':
     args = get_args()
     if args.ui_mode:
         import uvicorn
-        from app.server.server import app
+        from server.server import app
         uvicorn.run(app, host=args.host, port=args.port)
     else:
         from local import process

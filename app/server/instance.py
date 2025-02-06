@@ -5,7 +5,7 @@ from typing import List, Optional, Callable
 from PIL import Image
 from pydantic import BaseModel
 
-from app.local import generate_out_path, MaskInfo
+from ..local import generate_out_path, MaskInfo
 from app.server.task import DecensorItem
 from lib_cream_py import ColorMask, RawMask
 from lib_cream_py import InpaintNN, decensor_image_variations

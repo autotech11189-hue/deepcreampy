@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.responses import StreamingResponse
 
-from app.server.task import DecensorItem
+from .task import DecensorItem
 
 app = FastAPI()
 
@@ -38,6 +38,6 @@ class DecensorRequest(BaseModel):
     imgs: list[DecensorItem]
 
 
-@app.post("/decensor", response_model=StreamingResponse)
+@app.post("/decensor", response_class=StreamingResponse)
 async def decensor(files: DecensorRequest):
     pass

@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import HTTPException
 from fastapi.requests import Request
 
-from app.server.task import DecensorItem
+from .task import DecensorItem
 from instance import executor_instances, NotifyType
 
 
