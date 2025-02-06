@@ -68,9 +68,6 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
         crop_img_array = image_to_array(crop_img)
 
         # resize the mask images
-        mask_img = mask_img.crop(bounding_box)
-        mask_img = mask_img.resize((256, 256))
-
         mask_img = mask_img_big.crop(bounding_box)
         mask_img = mask_img.resize((256, 256), resample=Image.Resampling.NEAREST)
         # convert mask_img back to array
