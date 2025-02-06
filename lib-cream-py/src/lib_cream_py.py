@@ -66,7 +66,7 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
     output_img_array = ori_array[0].copy()
 
     for region_counter, region in enumerate(regions, 1):
-        bounding_box = expand_bounding(ori, region, expand_factor=1.5)
+        bounding_box = expand_bounding(ori, region, expand_factor=1.5, logger=logger)
         crop_img = ori.crop(bounding_box)
 
         # resize the cropped images
