@@ -3,9 +3,9 @@ from typing import Callable
 import numpy as np
 from PIL import Image
 
+from logger import Logger
 from mask import Mask, ColorMask, RawMask
 import util
-import mask
 from model.model import InpaintNN
 from util import apply_variant, image_to_array, expand_bounding, find_regions
 
@@ -22,14 +22,17 @@ def test():
 
 def decensor_image_variations(model: InpaintNN, ori: Image, colored: Image,
                               mask_gen: Callable[[int, Image, Image], Mask],
-                              variations: int, is_mosaic: bool, callback: Callable[[int, Image], None]):
+                              variations: int, is_mosaic: bool, callback: Callable[[int, Image], None], logger = Logger()):
     for i in range(variations):
+        logger.info("apply-variant", i)
         ori = apply_variant(ori, i)
         colored = apply_variant(colored, i)
+        logger.info("generate-mask")
         mask = mask_gen(i, ori, colored)
-        out = decensor_image(model, mask, ori, colored, is_mosaic)
+        out = decensor_image(model, mask, ori, colored, is_mosaic, logger)
         out = apply_variant(out, i)
         callback(i, out)
+    logger.info("finished")
 
 
 def save_alpha(img):
@@ -42,8 +45,9 @@ def save_alpha(img):
 
 
 # TODO: decensor all cropped parts of the same image in a batch (then i need input for colored an array of those images and make additional changes)
-def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_mosaic: bool) -> Image.Image:
+def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_mosaic: bool, logger = Logger()) -> Image.Image:
     ori, has_alpha, alpha_channel = save_alpha(ori)
+    logger.info("remove-alpha")
 
     ori_array = image_to_array(ori)
     ori_array = np.expand_dims(ori_array, axis=0)
@@ -51,10 +55,13 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
     mask_img_big = mask.display()
 
     # colored image is only used for finding the regions
+    logger.info("find-regions")
     regions = find_regions(colored.convert('RGB'), mask_arr)
 
     if len(regions) == 0 and not is_mosaic:
+        logger.error("No regions found")
         raise Exception("No regions found")
+    logger.debug("Found {region_count} censored regions in this image!".format(region_count = len(regions)))
 
     output_img_array = ori_array[0].copy()
 
@@ -86,6 +93,8 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
         crop_img_array = crop_img_array * 2.0 - 1
 
         # Run predictions for this batch of images
+        logger.info("decensor-segment", (region_counter, len(regions)))
+
         pred_img_array = model.predict_image(crop_img_array, crop_img_array, mask_array)
 
         pred_img_array = np.squeeze(pred_img_array, axis=0)
@@ -117,6 +126,7 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
 
     # restore the alpha channel if the image had one
     if has_alpha:
+        logger.info("restore-alpha")
         output_img_array = np.concatenate((output_img_array, alpha_channel), axis=2)
 
     return Image.fromarray(output_img_array.astype('uint8'))
@@ -125,7 +135,7 @@ def train():
     y = np.load("y.npy").astype(np.float32)
     x = np.load("x.npy").astype(np.float32)
     mask = np.load("mask.npy").astype(np.float32)
-    model = InpaintNN("./temp/model.keras", create_model=True)
+    model = InpaintNN("./temp/mosaic.keras", create_model=True)
     model.train(0, [(y, y, mask)], "./temp/checkpoints")
     model.migrate_weights()
     #img = model.predict_image(x, x, mask)
@@ -135,4 +145,4 @@ def train():
     #img.save("example1.png")
 
 if __name__ == "__main__":
-    test()
+    train()

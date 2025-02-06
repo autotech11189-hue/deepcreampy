@@ -57,7 +57,7 @@ class InpaintNN:
 
     def migrate_weights(self):
         model_path = '../models/mosaic/Train_290000'
-        model_path =  '../models/bar/Train_775000'
+        #model_path =  '../models/bar/Train_775000'
         reader = tf.compat.v1.train.NewCheckpointReader(model_path)
         variable_map = reader.get_variable_to_shape_map()
         lookup_model = {
@@ -165,7 +165,6 @@ class InpaintNN:
         self.model.save(self.model_path)
 
     def train(self, epochs: int, dataset, checkpoint_path: str):
-        # todo: make class based & have different response shapes for training & execution
         X = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         Y = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
         MASK = Input(shape=(self.input_height, self.input_width, 3), batch_size=self.batch_size, dtype=tf.float32)
