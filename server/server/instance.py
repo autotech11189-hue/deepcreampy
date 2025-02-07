@@ -1,15 +1,17 @@
 import asyncio
+import os
 from asyncio import Event, Lock
 from typing import List, Optional, Callable
 
 from PIL import Image
+from fastapi import HTTPException
 from pydantic import BaseModel
 
-from ..local import generate_out_path, MaskInfo
-from server.server.task import DecensorItem
 from lib_cream_py import ColorMask, RawMask
 from lib_cream_py import InpaintNN, decensor_image_variations
 from lib_cream_py.util import apply_variant
+from server.server.task import DecensorItem
+from ..local import generate_out_path, MaskInfo
 
 NotifyType = Optional[Callable[[int, Optional[bytes]], None]]
 
@@ -19,16 +21,32 @@ def get_img(id: str) -> Image.Image:
 
 
 def get_file_path(id: str) -> str:
-    # todo:
-    pass
+    for file in os.listdir("./temp"):
+        filename_without_ext, _ = os.path.splitext(file)
+
+        if filename_without_ext == id:
+            return os.path.join("./temp", file)
+
+    raise HTTPException(status_code=422, detail="File " + id + " not found")
 
 
 class ExecutorInstance(BaseModel):
-    # todo: lazy load models
-    model_mosaic: InpaintNN
-    model_bar: InpaintNN
+    _model_mosaic: Optional[InpaintNN] = None
+    _model_bar: Optional[InpaintNN] = None
 
     busy: bool = False
+
+    @property
+    def model_mosaic(self) -> InpaintNN:
+        if self._model_mosaic is None:
+            self._model_mosaic = InpaintNN("./models/mosaic.keras")
+        return self._model_mosaic
+
+    @property
+    def model_bar(self) -> InpaintNN:
+        if self._model_bar is None:
+            self._model_bar = InpaintNN("./models/bar.keras")
+        return self._model_bar
 
     def free_executor(self):
         self.busy = False
@@ -39,7 +57,6 @@ class ExecutorInstance(BaseModel):
     async def sent_stream(self, items: list[DecensorItem], sender: NotifyType):
         # todo: sent progres
         # todo: cancel inbetween images
-        # todo: run on other thread
         for index, item in enumerate(items):
             sender(6, bytes(index))
             img = get_img(item.img_id)

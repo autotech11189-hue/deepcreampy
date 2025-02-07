@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from typing import List, Optional
 
 from fastapi import HTTPException
@@ -9,13 +10,16 @@ from instance import executor_instances, NotifyType
 
 
 class QueueElement:
+    item_id: str
     items: list[DecensorItem]
 
     def __init__(self, req: Request, items: list[DecensorItem]):
+        self.item_id = str(uuid.uuid4())
         self.items = items
         self.req = req
 
     async def is_client_disconnected(self) -> bool:
+        #todo: make optional
         if await self.req.is_disconnected():
             return True
         return False
