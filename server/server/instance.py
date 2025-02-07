@@ -6,7 +6,7 @@ from PIL import Image
 from pydantic import BaseModel
 
 from ..local import generate_out_path, MaskInfo
-from app.server.task import DecensorItem
+from server.server.task import DecensorItem
 from lib_cream_py import ColorMask, RawMask
 from lib_cream_py import InpaintNN, decensor_image_variations
 from lib_cream_py.util import apply_variant
