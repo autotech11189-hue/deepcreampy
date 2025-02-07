@@ -5,13 +5,18 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 
 from .task import DecensorItem
 
 app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])
 
-DATA_DIR = Path("data")
+DATA_DIR = Path("temp")
+if DATA_DIR.exists():
+    import shutil
+    shutil.rmtree(DATA_DIR)
 DATA_DIR.mkdir(exist_ok=True)
 
 
@@ -24,7 +29,7 @@ async def read_index():
 async def upload_files(files: list[UploadFile]):
     ids = []
     for file in files:
-        img_id = uuid.uuid4()
+        img_id = str(uuid.uuid4())
         ids.append(img_id)
         ext = Path(file.filename).suffix
         file_path = DATA_DIR / f"{img_id}{ext}"
