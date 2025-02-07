@@ -71,7 +71,7 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType):
                 else:
                     raise HTTPException(500, detail="User is no longer connected") #just for the logs
 
-            instance = await executor_instances.find_executor()
+            instance = await executor_instances.find_executor(task.item_id)
             await task_queue.remove(task)
             if notify:
                 notify(4, b"")

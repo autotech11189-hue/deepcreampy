@@ -34,7 +34,8 @@ class ExecutorInstance(BaseModel):
     _model_mosaic: Optional[InpaintNN] = None
     _model_bar: Optional[InpaintNN] = None
 
-    busy: bool = False
+    busy: Optional[str] = False
+    stop = False
 
     @property
     def model_mosaic(self) -> InpaintNN:
@@ -49,15 +50,18 @@ class ExecutorInstance(BaseModel):
         return self._model_bar
 
     def free_executor(self):
-        self.busy = False
+        self.busy = None
 
     async def sent(self, items: list[DecensorItem]):
         await self.sent_stream(items, None)
 
     async def sent_stream(self, items: list[DecensorItem], sender: NotifyType):
         # todo: sent progres
-        # todo: cancel inbetween images
         for index, item in enumerate(items):
+            if self.stop:
+                sender(8, None)
+                self.stop = False
+                break
             sender(6, bytes(index))
             img = get_img(item.img_id)
             save_image = lambda i, out_img: out_img.save(generate_out_path(item.output, get_file_path(item.img_id), i))
@@ -83,20 +87,20 @@ class Executors:
         self.list.append(instance)
 
     def free_executors(self) -> int:
-        return len([item for item in self.list if not item.busy])
+        return len([item for item in self.list if item.busy is None])
 
     async def _find_instance(self):
         while True:
-            instance = next((x for x in self.list if x.busy == False), None)
+            instance = next((x for x in self.list if x.busy is None), None)
             if instance is not None:
                 return instance
             # todo: cricial error: warn should never happen
             await self.event.wait()
 
-    async def find_executor(self) -> ExecutorInstance:
+    async def find_executor(self, task_id:str) -> ExecutorInstance:
         async with self.lock:  # Using async with for lock management
             instance = await self._find_instance()
-            instance.busy = True
+            instance.busy = task_id
             return instance
 
     async def free_executor(self, instance: ExecutorInstance):

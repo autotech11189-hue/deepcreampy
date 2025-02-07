@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 
+from .instance import executor_instances
 from .myqueue import task_queue
 from .task import DecensorItem
 
@@ -51,12 +52,16 @@ async def decensor(files: DecensorRequest):
 
 @app.get("/tasks", response_model=list[(str, int)])
 async def tasks() -> list[(str, int)]:
-    return [(x.item_id, len(x.items)) for x in task_queue.queue]
+    return [(x.item_id, len(x.items)) for x in task_queue.queue] + [(x.busy, len(x.items)) for x in
+                                                                    executor_instances.list if x.busy is not None]
 
 
 @app.delete("/task/{task_id}", response_class=StreamingResponse)
 async def cancel_task(task_id: str):
     task = next((x for x in task_queue.queue if x.item_id == task_id))
     if task is None:
-        raise HTTPException(status_code=422, detail="Task not found")
+        executor = next((x for x in executor_instances.list if x.busy == task_id))
+        if executor is None:
+            raise HTTPException(status_code=422, detail="Task not found")
+        executor.stop = True
     task_queue.remove(task)
