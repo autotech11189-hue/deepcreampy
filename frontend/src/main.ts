@@ -7,4 +7,4 @@ import './index.css'
 const app = createApp(App);
 app.use(ArcoVue);
 
-app.mount('#app')
+app.mount('#server')
