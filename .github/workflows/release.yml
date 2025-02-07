@@ -19,8 +19,8 @@ jobs:
         with:
           python_ver: '3.12'
           pyinstaller_ver: '==6.11.1'
-          requirements: 'app/requirements.txt'
-          spec: 'app/main.spec'
+          requirements: 'server/requirements.txt'
+          spec: 'server/main.spec'
           upload_exe_with_name: 'DeepCreamPy-${{ runner.os }}'
 
   release:
