@@ -69,8 +69,6 @@ class ContextualBlock(Layer):
                                           rates=[1, 1, 1, 1],
                                           padding='VALID')
 
-        # todo: why 2 reshapes
-        patch1 = tf.reshape(patch1, (b, 1, c, self.k_size * self.k_size * dims))
         patch1 = tf.reshape(patch1, (b, 1, 1, c, self.k_size * self.k_size * dims))
         patch1 = tf.transpose(patch1, [0, 1, 2, 4, 3])
 

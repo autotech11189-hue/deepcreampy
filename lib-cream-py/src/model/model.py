@@ -25,8 +25,8 @@ class InpaintModel(Model):
         input_tensor = layers.Concatenate(axis=-1)([X, MASK])
         vec_en = self.encoder(input_tensor)
         vec_con = self.cb1((vec_en, vec_en, MASK))
-
-        I_co = self.decoder(vec_en)
+        if training:
+            I_co = self.decoder(vec_en)
         I_ge = self.decoder(vec_con)
 
         image_result = I_ge * (1 - MASK) + Y * MASK
