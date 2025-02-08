@@ -53,13 +53,15 @@ class InpaintNN:
 
     def check_model_file(self):
         if not os.path.exists(self.model_path):
-            self.logger.error("\nMissing Model, download model")
-            self.logger.error("Read: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself \n")
-            exit(-1)
+            self.logger.error("missing-model")
+            raise FileNotFoundError
 
-    def migrate_weights(self):
-        model_path = '../models/mosaic/Train_290000'
-        #model_path =  '../models/bar/Train_775000'
+    def migrate_weights(self, model_path = './models/bar/Train_775000'):
+        self.disc_red = DiscriminatorRed(name='disc_red')
+        self.disc_red.build((None, 256, 256, 3))
+
+        #model_path = '../models/mosaic/Train_290000'
+        #model_path = '../models/bar/Train_775000'
         reader = tf.compat.v1.train.NewCheckpointReader(model_path)
         variable_map = reader.get_variable_to_shape_map()
         lookup_model = {
@@ -202,7 +204,7 @@ class InpaintNN:
 
         if checkpoint_manager.latest_checkpoint:
             checkpoint.restore(checkpoint_manager.latest_checkpoint)
-            self.logger.debug(f"Checkpoint restored from {checkpoint_manager.latest_checkpoint}")
+            self.logger.info(f"checkpoint restored",checkpoint_manager.latest_checkpoint)
 
         @tf.function
         def train_step(real_images, y, masks):
@@ -231,17 +233,16 @@ class InpaintNN:
 
         # Training loop
         for epoch in range(epochs):
-            self.logger.info(f"\nStart epoch {epoch}")
+            self.logger.info("start-epoch", epoch)
 
             for step, (real_images, y, masks) in enumerate(dataset):
                 d_loss, g_loss = train_step(real_images, y, masks)
 
                 if step % 100 == 0:
-                    self.logger.info(
-                        f"Step {step}: Discriminator Loss: {d_loss.numpy():.4f}, Generator Loss: {g_loss.numpy():.4f}")
+                    self.logger.info("train-step", (d_loss.numpy(), g_loss.numpy()))
 
             checkpoint_manager.save()
-            self.logger.info(f"Checkpoint saved at {checkpoint_manager.latest_checkpoint}")
+            self.logger.info("checkpoint-saved",  checkpoint_manager.latest_checkpoint)
 
         if epochs == 0:
             optimizer_G.build(model.trainable_variables)
@@ -249,29 +250,7 @@ class InpaintNN:
             optimizer_D.build(disc_red.trainable_variables)
         else:
             model.save(self.model_path)
-        optimizer_G_vars = [x.path for x in optimizer_G.variables]
-        optimizer_D_vars = [x.path for x in optimizer_D.variables]
-        new_name_map = {}
-        for i, var_name in enumerate(optimizer_G_vars):
-            checkpoint_name = f"(root).optimizer_G._variables.{i}"
-            new_name_map[checkpoint_name] = var_name
-
-        for i, var_name in enumerate(optimizer_D_vars):
-            checkpoint_name = f"(root).optimizer_D._variables.{i}"
-            new_name_map[checkpoint_name] = var_name
-        self.new_name_map = new_name_map
         self.model = model
-        self.disc_red = disc_red
-
-    def load_checkpoint(self):
-        checkpoint_path = tf.train.latest_checkpoint(self.model_path)
-
-        if checkpoint_path:
-            self.model.load_weights(checkpoint_path)
-            self.logger.info(f"Model restored from {checkpoint_path}")
-        else:
-            self.logger.warn("\nNo checkpoint found")
-            exit(-1)
 
     def predict_image(self, censored, unused, mask):
         image_result = self.model((censored, unused, mask), training=False)

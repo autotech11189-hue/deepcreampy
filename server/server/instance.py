@@ -7,13 +7,63 @@ from PIL import Image
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from lib_cream_py import ColorMask, RawMask
-from lib_cream_py import InpaintNN, decensor_image_variations
-from lib_cream_py.util import apply_variant
-from server.server.task import DecensorItem
+from lib_cream_py import InpaintNN, decensor_image_variations, Logger, apply_variant, ColorMask, RawMask
+from .task import DecensorItem
 from ..local import generate_out_path, MaskInfo
 
 NotifyType = Optional[Callable[[int, Optional[bytes]], None]]
+
+
+# todo: is this thread save
+class WebLogger(Logger):
+    def __init__(self, sender):
+        self.sender = sender
+
+    def warn(self, id: str, info=None):
+        match id:
+            case _:
+                self.sender(17, id.encode('utf-8'))
+
+    def info(self, id: str, info=None):
+        match id:
+            case "apply-variant":
+                self.sender(3, bytes(info))
+            case "generate-mask":
+                self.sender(4, None)
+            case "finished":
+                self.sender(5, None)
+            case "remove-alpha":
+                self.sender(6, None)
+            case "find-regions":
+                self.sender(7, None)
+            case "decensor-segment":
+                region_counter, region_count = info
+                self.sender(8, (bytes(region_counter) + bytes(region_count)))
+            case "restore-alpha":
+                self.sender(9, None)
+            case _:
+                self.sender(10, id.encode('utf-8'))
+
+    def debug(self, id: str, info=None):
+        match id:
+            case "found-regions":
+                region_count = info
+                self.sender(11, region_count.encode('utf-8'))
+            case _:
+                self.sender(12, id.encode('utf-8'))
+
+    def error(self, id: str, info=None):
+        match id:
+            case "no-regions":
+                self.sender(13, None)
+            case "missing-model":
+                # "Missing Model, download model\nRead: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself"
+                self.sender(14, None)
+            case "bounding-box-out-of-bounds":
+                x1_square, y1_square, x2_square, y2_square = info
+                self.sender(15, None)
+            case _:
+                self.sender(16, id.encode('utf-8'))
 
 
 def get_img(id: str) -> Image.Image:
@@ -56,25 +106,32 @@ class ExecutorInstance(BaseModel):
         await self.sent_stream(items, None)
 
     async def sent_stream(self, items: list[DecensorItem], sender: NotifyType):
-        # todo: sent progres
+        logger = WebLogger(sender) if sender else Logger()
         for index, item in enumerate(items):
+            (self.model_mosaic if item.is_moasic else self.model_bar).logger = logger
             if self.stop:
-                sender(8, None)
+                sender(201, None)
                 self.stop = False
                 break
-            sender(6, bytes(index))
+            sender(1, bytes(index) + bytes(len(items)))
             img = get_img(item.img_id)
             save_image = lambda i, out_img: out_img.save(generate_out_path(item.output, get_file_path(item.img_id), i))
-
             mask = MaskInfo(item.mask)
             if mask.file:
-                mask_gen = lambda i, ori, colored: RawMask(apply_variant(get_img(mask.file), i))
+                mask_img = get_img(mask.file)
+                mask_gen = lambda i, ori, colored: RawMask(apply_variant(mask_img, i))
             else:
                 mask_gen = lambda i, ori, colored: ColorMask(colored if item.is_mosaic else ori, rgb=mask.rgb)
-            await asyncio.to_thread(
-                decensor_image_variations(self.model_mosaic if item.is_moasic else self.model_bar, img, img, mask_gen,
-                                          item.variations, item.is_moasic, save_image))
-            sender(7, bytes(index))
+            try:
+                await asyncio.to_thread(
+                    decensor_image_variations(self.model_mosaic if item.is_moasic else self.model_bar, img, img,
+                                              mask_gen,
+                                              item.variations, item.is_moasic, save_image, logger=logger))
+            except Exception as e:
+                sender(202, None)
+                return
+            sender(2, bytes(index) + bytes(len(items)))
+        sender(200, None)
 
 
 class Executors:
@@ -97,7 +154,7 @@ class Executors:
             # todo: cricial error: warn should never happen
             await self.event.wait()
 
-    async def find_executor(self, task_id:str) -> ExecutorInstance:
+    async def find_executor(self, task_id: str) -> ExecutorInstance:
         async with self.lock:  # Using async with for lock management
             instance = await self._find_instance()
             instance.busy = task_id

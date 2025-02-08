@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from fastapi.requests import Request
 
 from .task import DecensorItem
-from instance import executor_instances, NotifyType
+from .instance import executor_instances, NotifyType
 
 
 class QueueElement:
@@ -19,7 +19,6 @@ class QueueElement:
         self.req = req
 
     async def is_client_disconnected(self) -> bool:
-        #todo: make optional
         if await self.req.is_disconnected():
             return True
         return False
@@ -52,7 +51,7 @@ class TaskQueue:
 
 task_queue = TaskQueue()
 
-async def wait_in_queue(task: QueueElement, notify: NotifyType):
+async def wait_in_queue(task: QueueElement, notify: NotifyType, check_disconnect: bool):
     """Will get task position report it. If its in the range of translators then it will try to aquire an instance(blockig) and sent a task to it. when done the item will be removed from the queue and result will be returned"""
     while True:
         queue_pos = task_queue.get_pos(task)
@@ -62,9 +61,9 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType):
             else:
                 raise HTTPException(500, detail="User is no longer connected")  # just for the logs
         if notify:
-            notify(3, str(queue_pos).encode('utf-8'))
+            notify(198, str(queue_pos).encode('utf-8'))
         if queue_pos < executor_instances.free_executors():
-            if await task.is_client_disconnected():
+            if check_disconnect and await task.is_client_disconnected():
                 await task_queue.update_event()
                 if notify:
                     return
@@ -74,7 +73,7 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType):
             instance = await executor_instances.find_executor(task.item_id)
             await task_queue.remove(task)
             if notify:
-                notify(4, b"")
+                notify(199, b"")
             if notify:
                 await instance.sent_stream(task.items, notify)
             else:

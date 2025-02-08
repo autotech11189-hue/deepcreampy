@@ -7,6 +7,7 @@ from numpy import ndarray
 
 from util import image_to_array
 
+
 class Mask(ABC):
     @abstractmethod
     def find_mask(self) -> ndarray:
@@ -84,12 +85,38 @@ class ColorMask(Mask):
         return arr
 
 
+def convert_matrix(matrix):
+    if not np.all(matrix[:, :, 0] == matrix[:, :, 1]) or not np.all(matrix[:, :, 1] == matrix[:, :, 2]):
+        raise ValueError("Values in all three dimensions must match")
+
+    return matrix.mean(axis=2)
+
+
+class RawMask2(ColorMask):
+    def __init__(self, image: Union[Image, ndarray], upper_is_mask: bool,
+                 threshold: Union[float, int]):
+        super().__init__(image, (threshold, threshold, threshold))
+        self.upper_is_mask = upper_is_mask
+
+    def find_mask_logic(self, image):
+        """
+        return AxB with values from [0, 1] 1 is found
+        """
+        m = np.zeros(image.shape[:2], np.uint8)
+        image = convert_matrix(image)
+        i, j = np.where(np.all(image > self.color[0] if self.upper_is_mask else image < self.color[0], axis=-1))
+
+        if len(i) > 0:
+            m[i, j] = 1
+
+        return m
+
+
 class RawMask(ColorMask):
     def __init__(self, image: Union[Image, ndarray], mask_black=True):
         """
         :param image: ndarray = AxBx3 or AxBx1 or AxB. values should be in the range [0, 1]
         """
-        #todo: allow grayscale instead of black & white
         super().__init__(image, (0, 0, 0) if mask_black else (1, 1, 1))
 
 

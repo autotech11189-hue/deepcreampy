@@ -25,7 +25,7 @@ def get_args():
                         help='if you want ui mode, if missing: command line interface')
     parser.add_argument('-p', '--port', type=int, default=8000, help='Server port')
     parser.add_argument('--host', type=str, default="127.0.0.1", help='Server host')
-
+    parser.add_argument('--require-keep-connection', action='store_true', help='If this flag is set it requires the user to keep the connection. Decensor requests will be removed if the client disconnects.')
     args = parser.parse_args()
     return args
 

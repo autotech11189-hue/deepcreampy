@@ -1,11 +1,13 @@
 <script>
-import DropOver from "./components/DropOver.vue";
-import Button from './components/Button.vue'
+import DropOver from "@/components/DropOver.vue";
+import Button from '@/components/Button.vue'
 import ViewFiles from "@/components/ViewFiles.vue";
 import SubmitButton from "@/components/SubmitButton.vue";
+import UploadPage from "@/components/UploadPage.vue";
 
 export default {
   components: {
+    UploadPage,
     SubmitButton,
     ViewFiles,
     DropOver,
@@ -15,16 +17,27 @@ export default {
     return {
       files: [],
       mode: 0,
-      color: '#00FF00'
+      is_mosaic: false,
+      variations: 1,
+      output: "decensor_output",
+      color: '#00FF00',
+      mask_suffix: "_mask",
+      waiting: true
     };
   },
   methods: {
+    deleteImageServer(id) {
+      if (id) {
+        fetch("http://127.0.0.1:8000/image", {method: "DELETE"})
+      }
+    },
     removeFile(file) {
-      //TODO: remove image from server
       if (file.image) {
+        this.deleteImageServer(file.image.id);
         this.files = this.files.filter(f => f !== file.image);
       }
       if (file.mask) {
+        this.deleteImageServer(file.mask.id);
         this.files = this.files.filter(f => f !== file.mask);
       }
     },
@@ -36,7 +49,7 @@ export default {
         return item;
       });
       this.files.push(...files);
-      fetch("http://127.0.0.1:8000/upload_files", {
+      fetch("http://127.0.0.1:8000/images", {
         method: "POST",
         body: formData
       }).then(r => r.json()
@@ -55,16 +68,33 @@ export default {
     }
   },
   computed: {
+    get_mask_color() {
+      return this.mode === 0 ? this.color : null;
+    },
+    submitDisabled() {
+      return this.getFilesJoined().any(v => v.warn);
+    },
     getFilesJoined() {
       if (this.mode === 1) {
         const fileMap = new Map();
 
         this.files.forEach(file => {
-          const match = file.name.match(/^(.*?)(_mask)?(\.[^.]+)$/);
+          let match, baseName, isMask;
+          if (this.mask_suffix.length > 0) {
+            const regex = new RegExp(`^(.*?)(_${this.mask_suffix})?(\\.[^.]+)$`);
+            match = file.name.match(regex);
+            if (match) {
+              baseName = match[1];
+              isMask = Boolean(match[2]);
+            }
+          } else {
+            match = file.name.match(/^(.*?)(\.[^.]+)$/);
+            if (match) {
+              baseName = match[1];
+              isMask = false;
+            }
+          }
           if (match) {
-            const baseName = match[1];
-            const isMask = Boolean(match[2]);
-
             if (!fileMap.has(baseName)) {
               fileMap.set(baseName, {image: null, mask: null, warn: true});
             }
@@ -91,61 +121,70 @@ export default {
 
 <template>
   <div class="bg-gray-100 h-screen w-screen">
-    <DropOver v-if="files.length === 0" @files-selected="handleFiles"/>
-    <div v-if="files.length !== 0" class="flex flex-col p-4">
-      <header class="w-full flex justify-between mb-2">
-        <div>
-          <Button content="RGB" :active="mode===0" :left="true" @update:active="() => mode = 0"/>
-          <Button content="Mask" :active="mode===1" @update:active="() => mode = 1"/>
-          <Button content="Detect" :active="mode===2" :disabled="true" :right="true"
-                  @update:active="() => mode = 2"/>
-        </div>
-        <div class="relative w-fit group flex">
-          <select name="variations" id="variations"
-                  class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </select>
-
-          <div
-            class="absolute bottom-full left-1/2 transform -translate-x-[90%]  translate-y-[90%] mb-2 hidden group-hover:block w-max bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg">
-            The amount of variations to generate for each image
+    <div v-if="waiting" class="w-full, h-full">
+      <UploadPage :output="output" :variations="variations" :is_mosaic="is_mosaic"
+                  :images="getFilesJoined" :mask_color="get_mask_color"/>
+    </div>
+    <div v-else class="w-full, h-full">
+      <DropOver v-if="files.length === 0" @files-selected="handleFiles"/>
+      <div v-if="files.length !== 0" class="flex flex-col p-4">
+        <header class="w-full flex justify-between mb-2">
+          <div>
+            <Button content="RGB" :active="mode===0" :left="true" @update:active="() => mode = 0"/>
+            <Button content="Mask" :active="mode===1" @update:active="() => mode = 1"/>
+            <Button content="Detect" :active="mode===2" :disabled="true" :right="true"
+                    @update:active="() => mode = 2"/>
           </div>
-        </div>
-
-      </header>
-      <div class="flex grow">
-        <div class="h-full w-1/6 flex flex-col gap-2">
-          <div v-if="mode === 0">
-            <p>Mask Color</p>
-            <a-color-picker v-model="color" showText disabledAlpha/>
-          </div>
-          <div v-if="mode === 1">
-            <p>Path Suffix</p>
-            <input class="rounded border-gray-200 w-full" style="box-shadow: none;" type="text"/>
-          </div>
-          <div v-if="mode === 2">
-            <p>Select Detector</p>
-            <select name="variations" id="variations"
+          <div class="relative w-fit group flex">
+            <select v-model="variations" name="variations" id="variations"
                     class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
             </select>
-            <p>Configure Detector</p>
+
+            <div
+              class="absolute bottom-full left-1/2 transform -translate-x-[90%]  translate-y-[90%] mb-2 hidden group-hover:block w-max bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg">
+              The amount of variations to generate for each image
+            </div>
           </div>
-          <div class="flex">
-            <p class="mr-1">Is Mosaic</p>
-            <input class="rounded border-gray-200" style="box-shadow: none;" type="checkbox"/>
+
+        </header>
+        <div class="flex grow">
+          <div class="h-full w-1/6 flex flex-col gap-2">
+            <div v-if="mode === 0">
+              <p>Mask Color</p>
+              <a-color-picker v-model="color" showText disabledAlpha/>
+            </div>
+            <div v-if="mode === 1">
+              <p>Path Suffix</p>
+              <input class="rounded border-gray-200 w-full" style="box-shadow: none;" type="text"
+                     v-model="mask_suffix"/>
+            </div>
+            <div v-if="mode === 2">
+              <p>Select Detector</p>
+              <select name="detector"
+                      class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              </select>
+              <p>Configure Detector</p>
+            </div>
+            <div class="flex">
+              <p class="mr-1">Is Mosaic</p>
+              <input v-model="is_mosaic" class="rounded border-gray-200" style="box-shadow: none;"
+                     type="checkbox"/>
+            </div>
+            <div class="w-full">
+              <p class="mb-1">Output Directory</p>
+              <input v-model="output" class="rounded border-gray-200 w-full"
+                     style="box-shadow: none;" type="text"/>
+            </div>
+            <SubmitButton :disabled="submitDisabled" @click="() => console.log('clicked')"/>
           </div>
-          <div class="w-full">
-            <p class="mb-1">Output Directory</p>
-            <input class="rounded border-gray-200 w-full" style="box-shadow: none;" type="text"/>
+          <div class="h-full w-2/3">CENTER IMAGE EDITOR</div>
+          <div class="h-full w-1/6">
+            <ViewFiles :files="getFilesJoined" @remove-file="removeFile"/>
           </div>
-          <SubmitButton />
-        </div>
-        <div class="h-full w-2/3">CENTER IMAGE EDITOR</div>
-        <div class="h-full w-1/6">
-          <ViewFiles :files="getFilesJoined" @remove-file="removeFile"/>
         </div>
       </div>
     </div>

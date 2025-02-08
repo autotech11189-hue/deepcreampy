@@ -4,8 +4,7 @@ import numpy as np
 from PIL import Image
 
 from logger import Logger
-from mask import Mask, ColorMask, RawMask
-import util
+from mask import Mask, ColorMask, RawMask, RawMask2
 from model.model import InpaintNN
 from util import apply_variant, image_to_array, expand_bounding, find_regions
 
@@ -22,7 +21,8 @@ def test():
 
 def decensor_image_variations(model: InpaintNN, ori: Image, colored: Image,
                               mask_gen: Callable[[int, Image, Image], Mask],
-                              variations: int, is_mosaic: bool, callback: Callable[[int, Image], None], logger = Logger()):
+                              variations: int, is_mosaic: bool, callback: Callable[[int, Image], None],
+                              logger=Logger()):
     for i in range(variations):
         logger.info("apply-variant", i)
         ori = apply_variant(ori, i)
@@ -45,7 +45,8 @@ def save_alpha(img):
 
 
 # TODO: decensor all cropped parts of the same image in a batch (then i need input for colored an array of those images and make additional changes)
-def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_mosaic: bool, logger = Logger()) -> Image.Image:
+def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_mosaic: bool,
+                   logger=Logger()) -> Image.Image:
     ori, has_alpha, alpha_channel = save_alpha(ori)
     logger.info("remove-alpha")
 
@@ -59,9 +60,9 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
     regions = find_regions(colored.convert('RGB'), mask_arr)
 
     if len(regions) == 0 and not is_mosaic:
-        logger.error("No regions found")
+        logger.error("no-regions")
         raise Exception("No regions found")
-    logger.debug("Found {region_count} censored regions in this image!".format(region_count = len(regions)))
+    logger.debug("found-regions", len(regions))
 
     output_img_array = ori_array[0].copy()
 
@@ -131,6 +132,7 @@ def decensor_image(model: InpaintNN, mask: Mask, ori: Image, colored: Image, is_
 
     return Image.fromarray(output_img_array.astype('uint8'))
 
+
 def train():
     y = np.load("y.npy").astype(np.float32)
     x = np.load("x.npy").astype(np.float32)
@@ -138,11 +140,12 @@ def train():
     model = InpaintNN("./temp/mosaic.keras", create_model=True)
     model.train(0, [(y, y, mask)], "./temp/checkpoints")
     model.migrate_weights()
-    #img = model.predict_image(x, x, mask)
-    #img = np.squeeze(img, axis=0)
-    #img = (255.0 * ((img + 1.0) / 2.0)).astype(np.uint8)
-    #img = Image.fromarray(img.astype('uint8'))
-    #img.save("example1.png")
+    # img = model.predict_image(x, x, mask)
+    # img = np.squeeze(img, axis=0)
+    # img = (255.0 * ((img + 1.0) / 2.0)).astype(np.uint8)
+    # img = Image.fromarray(img.astype('uint8'))
+    # img.save("example1.png")
+
 
 if __name__ == "__main__":
     train()

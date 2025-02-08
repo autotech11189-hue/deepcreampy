@@ -3,7 +3,55 @@ from typing import List, Tuple
 
 from PIL import Image
 
-from lib_cream_py import RawMask, ColorMask, decensor_image_variations, apply_variant
+from lib_cream_py import RawMask, ColorMask, decensor_image_variations, apply_variant, Logger
+
+
+class CliLogger(Logger):
+    def warn(self, id: str, info=None):
+        match id:
+            case _:
+                print("[WARN]", "UNKNOWN", id)
+
+    def info(self, id: str, info=None):
+        match id:
+            case "apply-variant":
+                print("[INFO]", "Apply variant", info)
+            case "generate-mask":
+                print("[INFO]", "Generating mask")
+            case "finished":
+                print("[INFO]", "Finished processing")
+            case "remove-alpha":
+                print("[INFO]", "Removing alpha channel")
+            case "find-regions":
+                print("[INFO]", "Trying to find regions")
+            case "decensor-segment":
+                region_counter, region_count = info
+                print("[INFO]", "Processing", region_counter, "segment of", region_count)
+            case "restore-alpha":
+                print("[INFO]", "Restoring alpha channel")
+            case _:
+                print("[INFO]", "UNKNOWN", id)
+
+    def debug(self, id: str, info=None):
+        match id:
+            case "found-regions":
+                region_count = info
+                print("[DEBUG]", "Found", region_count, "regions")
+            case _:
+                print("[DEBUG]", "UNKNOWN", id)
+
+    def error(self, id: str, info=None):
+        match id:
+            case "no-regions":
+                print("[ERROR]", "Couldn't find any regions")
+            case "missing-model":
+                print(
+                    "[ERROR] Missing Model, download model\nRead: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself")
+            case "bounding-box-out-of-bounds":
+                x1_square, y1_square, x2_square, y2_square = info
+                print("[ERROR]", "Bounding box out of bounds", x1_square, y1_square, x2_square, y2_square)
+            case _:
+                print("[ERROR]", "UNKNOWN", id)
 
 
 class MaskInfo:
@@ -37,14 +85,14 @@ def generate_out_path(out_folder: str, file_path: str, index: int) -> str:
     return os.path.join(out_folder, new_file_name)
 
 
-def process(path: str, out_path: str, mask: MaskInfo, model, variations: int, is_mosaic: bool, cleanup: bool):
+def process(path: str, out_path: str, mask: MaskInfo, model, variations: int, is_mosaic: bool, cleanup: bool, logger: Logger):
     imgs = get_imgs(path)
     if mask.file:
         imgs = join_mask(imgs, mask.mask_name)
         for (img, mask) in imgs:
             save_image = lambda i, out_img: out_img.save(generate_out_path(out_path, img.path, i))
             mask_gen = lambda i, x, y: RawMask(apply_variant(mask.img, i))
-            decensor_image_variations(model, img.img, img.img, mask_gen, variations, is_mosaic, save_image)
+            decensor_image_variations(model, img.img, img.img, mask_gen, variations, is_mosaic, save_image, logger=logger)
             if cleanup:
                 try:
                     img.delete()
@@ -56,7 +104,7 @@ def process(path: str, out_path: str, mask: MaskInfo, model, variations: int, is
             try:
                 save_image = lambda i, out_img: out_img.save(generate_out_path(out_path, img.path, i))
                 mask_gen = lambda i, ori, colored: ColorMask(colored if is_mosaic else ori, rgb=mask.rgb)
-                decensor_image_variations(model, img.img, img.img, mask_gen, variations, is_mosaic, save_image)
+                decensor_image_variations(model, img.img, img.img, mask_gen, variations, is_mosaic, save_image, logger=logger)
             except Exception as e:
                 print("[ERROR]", e)
             if cleanup:
