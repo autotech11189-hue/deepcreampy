@@ -2,15 +2,16 @@ import asyncio
 import os
 import uuid
 from pathlib import Path
+import sys
 
 from fastapi import FastAPI, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
-from .instance import executor_instances, get_file_path
-from .myqueue import task_queue, QueueElement, wait_in_queue
-from .task import DecensorItem
+from serverr.instance import executor_instances, get_file_path
+from serverr.myqueue import task_queue, QueueElement, wait_in_queue
+from serverr.task import DecensorItem
 
 app = FastAPI()
 check_disconnect = False
@@ -25,10 +26,22 @@ if DATA_DIR.exists():
 DATA_DIR.mkdir(exist_ok=True)
 
 
+if getattr(sys, 'frozen', False):  # Running in a PyInstaller bundle
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(__file__)
+
 @app.get("/")
 async def read_index():
     return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
 
+@app.get("/assets/index.css")
+async def read_index():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "index.css"))
+
+@app.get("/assets/index.js")
+async def read_index():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "index.js"))
 
 @app.post("/images", response_model=list[str])
 async def upload_files(files: list[UploadFile]):

@@ -145,6 +145,7 @@ class ExecutorInstance:
                 break
             sender(1, bytes(index) + bytes(len(items)))
             img = get_img(item.img_id)
+            os.makedirs(item.output, exist_ok=True)
             save_image = lambda i, out_img: out_img.save(generate_out_path(item.output, item.output_name, i))
             mask = MaskInfo(item.mask)
             if mask.file:

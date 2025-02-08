@@ -6,7 +6,7 @@ if __name__ == '__main__':
     args = get_args()
     if args.ui_mode:
         import uvicorn
-        import serverr.server as ui
+        import server as ui
         ui.check_disconnect = args.require_keep_connection
         uvicorn.run(ui.app, host=args.host, port=args.port)
     else:
