@@ -143,13 +143,15 @@ def apply_variant(image: Image, variant_number: int):
     else:
         return image.transpose(Image.Transpose.FLIP_LEFT_RIGHT).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
+
 if __name__ == '__main__':
     from PIL import ImageDraw
     from mask import ColorMask
+
     image = Image.open('')
     no_alpha_image = image.convert('RGB')
     draw = ImageDraw.Draw(no_alpha_image)
-    mask = ColorMask(image, rgb=(0, 1,0))
+    mask = ColorMask(image, rgb=(0, 1, 0))
     for region in find_regions(no_alpha_image, mask.find_mask_simple()):
         draw.rectangle(expand_bounding(no_alpha_image, region), outline=(0, 255, 0))
     no_alpha_image.show()

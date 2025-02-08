@@ -104,9 +104,9 @@ export default {
           this.files = []
         }
       })
-          .catch(() => {
-            this.files = []
-          });
+        .catch(() => {
+          this.files = []
+        });
     }
   },
   computed: {
@@ -126,22 +126,22 @@ export default {
 <template>
   <div class="bg-gray-100 h-screen w-screen">
     <div v-if="waiting" class="w-full, h-full">
-      <UploadPage :output="output" :variations="variations" :is_mosaic="is_mosaic"
-                  :images="getFilesJoined" :mask_color="get_mask_color"/>
+      <UploadPage :images="getFilesJoined" :is_mosaic="is_mosaic" :mask_color="get_mask_color"
+                  :output="output" :variations="variations"/>
     </div>
     <div v-else class="w-full, h-full">
       <DropOver v-if="files.length === 0" @files-selected="handleFiles"/>
       <div v-if="files.length !== 0" class="flex flex-col p-4">
         <header class="w-full flex justify-between mb-2">
           <div>
-            <Button content="RGB" :active="mode===0" :left="true" @update:active="() => mode = 0"/>
-            <Button content="Mask" :active="mode===1" @update:active="() => mode = 1"/>
-            <Button content="Detect" :active="mode===2" :disabled="true" :right="true"
+            <Button :active="mode===0" :left="true" content="RGB" @update:active="() => mode = 0"/>
+            <Button :active="mode===1" content="Mask" @update:active="() => mode = 1"/>
+            <Button :active="mode===2" :disabled="true" :right="true" content="Detect"
                     @update:active="() => mode = 2"/>
           </div>
           <div class="relative w-fit group flex">
-            <select v-model="variations" name="variations" id="variations"
-                    class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <select id="variations" v-model="variations" class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    name="variations">
               <option value="1">1</option>
               <option value="2">2</option>
               <option value="3">3</option>
@@ -149,7 +149,7 @@ export default {
             </select>
 
             <div
-                class="absolute bottom-full left-1/2 transform -translate-x-[90%]  translate-y-[90%] mb-2 hidden group-hover:block w-max bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg">
+              class="absolute bottom-full left-1/2 transform -translate-x-[90%]  translate-y-[90%] mb-2 hidden group-hover:block w-max bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg">
               The amount of variations to generate for each image
             </div>
           </div>
@@ -159,17 +159,17 @@ export default {
           <div class="h-full w-1/6 flex flex-col gap-2">
             <div v-if="mode === 0">
               <p>Mask Color</p>
-              <a-color-picker v-model="color" showText disabledAlpha/>
+              <a-color-picker v-model="color" disabledAlpha showText/>
             </div>
             <div v-if="mode === 1">
               <p>Path Suffix</p>
-              <input class="rounded border-gray-200 w-full" style="box-shadow: none;" type="text"
-                     v-model="mask_suffix"/>
+              <input v-model="mask_suffix" class="rounded border-gray-200 w-full" style="box-shadow: none;"
+                     type="text"/>
             </div>
             <div v-if="mode === 2">
               <p>Select Detector</p>
-              <select name="detector"
-                      class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <select class="w-12 block p-2 border border-gray-300 bg-white rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      name="detector">
               </select>
               <p>Configure Detector</p>
             </div>

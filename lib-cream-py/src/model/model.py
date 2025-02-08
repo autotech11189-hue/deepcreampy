@@ -11,6 +11,7 @@ from .decoder import Decoder
 from .disciminator_red import DiscriminatorRed
 from .encoder import Encoder
 
+
 class InpaintModel(Model):
     def __init__(self, input_height=256, input_width=256, **kwargs):
         super(InpaintModel, self).__init__(name="", **kwargs)
@@ -37,7 +38,8 @@ class InpaintModel(Model):
 
 
 class InpaintNN:
-    def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False, logger=Logger()):
+    def __init__(self, model_path: str, input_height=256, input_width=256, batch_size=1, create_model=False,
+                 logger=Logger()):
         super(InpaintNN, self).__init__()
 
         self.new_name_map = None
@@ -56,12 +58,12 @@ class InpaintNN:
             self.logger.error("missing-model")
             raise FileNotFoundError
 
-    def migrate_weights(self, model_path = './models/bar/Train_775000'):
+    def migrate_weights(self, model_path='./models/bar/Train_775000'):
         self.disc_red = DiscriminatorRed(name='disc_red')
         self.disc_red.build((None, 256, 256, 3))
 
-        #model_path = '../models/mosaic/Train_290000'
-        #model_path = '../models/bar/Train_775000'
+        # model_path = '../models/mosaic/Train_290000'
+        # model_path = '../models/bar/Train_775000'
         reader = tf.compat.v1.train.NewCheckpointReader(model_path)
         variable_map = reader.get_variable_to_shape_map()
         lookup_model = {
@@ -204,7 +206,7 @@ class InpaintNN:
 
         if checkpoint_manager.latest_checkpoint:
             checkpoint.restore(checkpoint_manager.latest_checkpoint)
-            self.logger.info(f"checkpoint restored",checkpoint_manager.latest_checkpoint)
+            self.logger.info(f"checkpoint restored", checkpoint_manager.latest_checkpoint)
 
         @tf.function
         def train_step(real_images, y, masks):
@@ -242,7 +244,7 @@ class InpaintNN:
                     self.logger.info("train-step", (d_loss.numpy(), g_loss.numpy()))
 
             checkpoint_manager.save()
-            self.logger.info("checkpoint-saved",  checkpoint_manager.latest_checkpoint)
+            self.logger.info("checkpoint-saved", checkpoint_manager.latest_checkpoint)
 
         if epochs == 0:
             optimizer_G.build(model.trainable_variables)

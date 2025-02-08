@@ -2,11 +2,11 @@
   <div class="h-full w-full overflow-auto">
     <ul>
       <li v-for="(file, index) in files" :key="index" class="flex align-center justify-between p-1">
-        <span @click="viewFile(file)" class="grow cursor-pointer">{{ file.image.name }}</span>
+        <span class="grow cursor-pointer" @click="viewFile(file)">{{ file.image.name }}</span>
 
         <span v-if="file.warn" class="color-warning-500 cursor-default">⚠️</span>
 
-        <span @click="removeFile(file)" class="font-bold color-danger-500 cursor-pointer">❌</span>
+        <span class="font-bold color-danger-500 cursor-pointer" @click="removeFile(file)">❌</span>
       </li>
     </ul>
   </div>

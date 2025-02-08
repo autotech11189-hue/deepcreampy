@@ -2,13 +2,13 @@ name: Release CLI Binaries
 
 on:
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest] # macos-13 for x86_64 support?
+        os: [ windows-latest, ubuntu-latest, macos-latest ] # macos-13 for x86_64 support?
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code

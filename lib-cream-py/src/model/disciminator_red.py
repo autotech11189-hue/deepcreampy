@@ -17,7 +17,7 @@ class SNConv2D(Layer):
     def get_config(self):
         base_config = super().get_config()
         config = {
-            "output_dim":self.output_dim,
+            "output_dim": self.output_dim,
             "kernel_size": self.kernel_size,
             "stride": self.stride,
         }

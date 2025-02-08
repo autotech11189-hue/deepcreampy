@@ -1,5 +1,5 @@
 [project]
-name="lib-cream-py"
+name = "lib-cream-py"
 version = "1.0.0"
 
 description = "DeepCreamPy library"

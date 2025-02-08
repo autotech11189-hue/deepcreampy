@@ -1,6 +1,6 @@
 import tensorflow as tf
 from keras import Layer
-from keras.src.layers import Conv2D, Activation
+from keras.src.layers import Conv2D
 
 
 def ceil(a, b):

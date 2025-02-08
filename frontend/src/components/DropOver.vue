@@ -1,23 +1,23 @@
 <template>
   <div class="w-full h-full flex items-center justify-center">
-  <div
-    class="cursor-pointer w-[66%] h-[50%] border-1 border-dashed border-gray-400 flex items-center justify-center text-gray-500 rounded-lg"
-    @dragover.prevent="isDragging = true"
-    @dragleave.prevent="isDragging = false"
-    @drop.prevent="handleDrop"
-    @click="openFileInput"
-    :class="{ 'bg-gray-100': isDragging }"
-  >
-    <p class="font-bold">Drag & Drop files here or click to upload</p>
-    <input
-      type="file"
-      ref="fileInput"
-      class="hidden"
-      multiple
-      @change="handleFileSelect"
-    />
-  </div>
+    <div
+      :class="{ 'bg-gray-100': isDragging }"
+      class="cursor-pointer w-[66%] h-[50%] border-1 border-dashed border-gray-400 flex items-center justify-center text-gray-500 rounded-lg"
+      @click="openFileInput"
+      @dragover.prevent="isDragging = true"
+      @dragleave.prevent="isDragging = false"
+      @drop.prevent="handleDrop"
+    >
+      <p class="font-bold">Drag & Drop files here or click to upload</p>
+      <input
+        ref="fileInput"
+        class="hidden"
+        multiple
+        type="file"
+        @change="handleFileSelect"
+      />
     </div>
+  </div>
 </template>
 
 <script>

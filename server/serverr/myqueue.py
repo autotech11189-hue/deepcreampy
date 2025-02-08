@@ -5,8 +5,8 @@ from typing import List, Optional
 from fastapi import HTTPException
 from fastapi.requests import Request
 
-from .task import DecensorItem
 from .instance import executor_instances, NotifyType
+from .task import DecensorItem
 
 
 class QueueElement:
@@ -37,6 +37,7 @@ class TaskQueue:
             return self.queue.index(task)
         except ValueError:
             return None
+
     async def update_event(self):
         self.queue = [task for task in self.queue if not await task.is_client_disconnected()]
         self.queue_event.set()
@@ -49,7 +50,9 @@ class TaskQueue:
     async def wait_for_event(self):
         await self.queue_event.wait()
 
+
 task_queue = TaskQueue()
+
 
 async def wait_in_queue(task: QueueElement, notify: NotifyType, check_disconnect: bool):
     """Will get task position report it. If its in the range of translators then it will try to aquire an instance(blockig) and sent a task to it. when done the item will be removed from the queue and result will be returned"""
@@ -69,7 +72,7 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType, check_disconnect
                 if notify:
                     return
                 else:
-                    raise HTTPException(500, detail="User is no longer connected") #just for the logs
+                    raise HTTPException(500, detail="User is no longer connected")  # just for the logs
             instance = await executor_instances.find_executor(task.item_id)
             await task_queue.remove(task)
             if notify:

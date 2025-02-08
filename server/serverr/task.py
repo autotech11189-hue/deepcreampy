@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+
 class DecensorItem(BaseModel):
     output_name: str
     """e.g. filename.png"""

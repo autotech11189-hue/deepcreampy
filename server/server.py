@@ -1,8 +1,8 @@
 import asyncio
 import os
+import sys
 import uuid
 from pathlib import Path
-import sys
 
 from fastapi import FastAPI, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,23 +25,26 @@ if DATA_DIR.exists():
     shutil.rmtree(DATA_DIR)
 DATA_DIR.mkdir(exist_ok=True)
 
-
 if getattr(sys, 'frozen', False):  # Running in a PyInstaller bundle
     BASE_DIR = sys._MEIPASS
 else:
     BASE_DIR = os.path.dirname(__file__)
 
+
 @app.get("/")
 async def read_index():
     return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
+
 
 @app.get("/assets/index.css")
 async def read_index():
     return FileResponse(os.path.join(os.path.dirname(__file__), "index.css"))
 
+
 @app.get("/assets/index.js")
 async def read_index():
     return FileResponse(os.path.join(os.path.dirname(__file__), "index.js"))
+
 
 @app.post("/images", response_model=list[str])
 async def upload_files(files: list[UploadFile]):
