@@ -80,7 +80,7 @@ async def while_streaming(req: Request, items: list[DecensorItem]):
     return streaming_response
 
 
-@app.put("/decensor", response_class=StreamingResponse)
+@app.post("/decensor", response_class=StreamingResponse)
 async def decensor(req: Request, files: DecensorRequest):
     return await while_streaming(req, files.imgs)
 

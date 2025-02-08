@@ -6,9 +6,9 @@ if __name__ == '__main__':
     args = get_args()
     if args.ui_mode:
         import uvicorn
-        import server.server as server
-        server.check_disconnect = args.require_keep_connection
-        uvicorn.run(server.app, host=args.host, port=args.port)
+        import serverr.server as ui
+        ui.check_disconnect = args.require_keep_connection
+        uvicorn.run(ui.app, host=args.host, port=args.port)
     else:
         from local import process, CliLogger
         #todo: use input-original-path

@@ -22,7 +22,7 @@ export default {
       output: "decensor_output",
       color: '#00FF00',
       mask_suffix: "_mask",
-      waiting: true
+      waiting: false
     };
   },
   methods: {
@@ -41,40 +41,7 @@ export default {
         this.files = this.files.filter(f => f !== file.mask);
       }
     },
-    handleFiles(files_) {
-      const formData = new FormData();
-      files_.forEach(file => formData.append("files", file));
-      let files = files_.map(item => {
-        item.id = null;
-        return item;
-      });
-      this.files.push(...files);
-      fetch("http://127.0.0.1:8000/images", {
-        method: "POST",
-        body: formData
-      }).then(r => r.json()
-      ).then(ids => {
-        if (Array.isArray(ids) && ids.length === files.length) {
-          files.forEach((file, index) => {
-            file.id = ids[index];
-          });
-        } else {
-          this.files = []
-        }
-      })
-        .catch(() => {
-          this.files = []
-        });
-    }
-  },
-  computed: {
-    get_mask_color() {
-      return this.mode === 0 ? this.color : null;
-    },
-    submitDisabled() {
-      return this.getFilesJoined().any(v => v.warn);
-    },
-    getFilesJoined() {
+    getFilesJoinedM() {
       if (this.mode === 1) {
         const fileMap = new Map();
 
@@ -82,13 +49,13 @@ export default {
           let match, baseName, isMask;
           if (this.mask_suffix.length > 0) {
             const regex = new RegExp(`^(.*?)(_${this.mask_suffix})?(\\.[^.]+)$`);
-            match = file.name.match(regex);
+            match = file.image.name.match(regex);
             if (match) {
               baseName = match[1];
               isMask = Boolean(match[2]);
             }
           } else {
-            match = file.name.match(/^(.*?)(\.[^.]+)$/);
+            match = file.image.name.match(/^(.*?)(\.[^.]+)$/);
             if (match) {
               baseName = match[1];
               isMask = false;
@@ -114,6 +81,43 @@ export default {
           return {image: v, mask: null, warn: false}
         })
       }
+    },
+    handleFiles(files_) {
+      const formData = new FormData();
+      files_.forEach(file => formData.append("files", file));
+      let files = files_.map(item => {
+        item.id = null;
+        return item;
+      });
+      this.files.push(...files);
+      fetch("http://127.0.0.1:8000/images", {
+        method: "POST",
+        body: formData
+      }).then(r => r.json()
+      ).then(ids => {
+        if (Array.isArray(ids) && ids.length === files.length) {
+          files.forEach((file, index) => {
+            file.id = ids[index];
+          });
+          this.files = [...this.files]
+        } else {
+          this.files = []
+        }
+      })
+          .catch(() => {
+            this.files = []
+          });
+    }
+  },
+  computed: {
+    get_mask_color() {
+      return this.mode === 0 ? this.color : null;
+    },
+    submitDisabled() {
+      return this.getFilesJoinedM().some(v => v.warn || v.image.id === null);
+    },
+    getFilesJoined() {
+      return this.getFilesJoinedM();
     }
   }
 };
@@ -145,7 +149,7 @@ export default {
             </select>
 
             <div
-              class="absolute bottom-full left-1/2 transform -translate-x-[90%]  translate-y-[90%] mb-2 hidden group-hover:block w-max bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg">
+                class="absolute bottom-full left-1/2 transform -translate-x-[90%]  translate-y-[90%] mb-2 hidden group-hover:block w-max bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg">
               The amount of variations to generate for each image
             </div>
           </div>
@@ -179,7 +183,7 @@ export default {
               <input v-model="output" class="rounded border-gray-200 w-full"
                      style="box-shadow: none;" type="text"/>
             </div>
-            <SubmitButton :disabled="submitDisabled" @click="() => console.log('clicked')"/>
+            <SubmitButton :disabled="submitDisabled" @click="() => waiting = true"/>
           </div>
           <div class="h-full w-2/3">CENTER IMAGE EDITOR</div>
           <div class="h-full w-1/6">

@@ -5,13 +5,43 @@ from typing import List, Optional, Callable
 
 from PIL import Image
 from fastapi import HTTPException
-from pydantic import BaseModel
 
 from lib_cream_py import InpaintNN, decensor_image_variations, Logger, apply_variant, ColorMask, RawMask
 from .task import DecensorItem
-from ..local import generate_out_path, MaskInfo
 
-NotifyType = Optional[Callable[[int, Optional[bytes]], None]]
+
+class MaskInfo:
+    def __init__(self, v: str):
+        if v.startswith("rgb-"):
+            self.file = False
+            try:
+                rgb_values = v[4:].split(",")
+                self.rgb = tuple(int(value) for value in rgb_values)
+                if not all(0 <= value <= 255 for value in self.rgb):
+                    raise ValueError("RGB values must be between 0 and 255")
+                if len(self.rgb) != 3:
+                    raise ValueError("RGB values must be 3 numbers")
+                self.rgb = (self.rgb[0], self.rgb[1], self.rgb[2])
+            except ValueError:
+                raise Exception("Invalid RGB format. Expected format: rgb-R,G,B")
+        elif v.startswith("file-"):
+            self.file = True
+            self.mask_name = v[5:]
+            if len(self.mask_name) == 0:
+                raise ValueError("Mask name must not be empty")
+        else:
+            raise ValueError(f"Unknown mask type: {v}")
+
+
+def generate_out_path(out_folder: str, file_path: str, index: int) -> str:
+    file_name, file_extension = os.path.splitext(os.path.basename(file_path))
+
+    new_file_name = f"{file_name}_{index}{file_extension}"
+
+    return os.path.join(out_folder, new_file_name)
+
+
+NotifyType = Optional[Callable[[int, bytes], None]]
 
 
 # todo: is this thread save
@@ -29,18 +59,18 @@ class WebLogger(Logger):
             case "apply-variant":
                 self.sender(3, bytes(info))
             case "generate-mask":
-                self.sender(4, None)
+                self.sender(4, b"")
             case "finished":
-                self.sender(5, None)
+                self.sender(5, b"")
             case "remove-alpha":
-                self.sender(6, None)
+                self.sender(6, b"")
             case "find-regions":
-                self.sender(7, None)
+                self.sender(7, b"")
             case "decensor-segment":
                 region_counter, region_count = info
                 self.sender(8, (bytes(region_counter) + bytes(region_count)))
             case "restore-alpha":
-                self.sender(9, None)
+                self.sender(9, b"")
             case _:
                 self.sender(10, id.encode('utf-8'))
 
@@ -48,20 +78,20 @@ class WebLogger(Logger):
         match id:
             case "found-regions":
                 region_count = info
-                self.sender(11, region_count.encode('utf-8'))
+                self.sender(11, bytes(region_count))
             case _:
                 self.sender(12, id.encode('utf-8'))
 
     def error(self, id: str, info=None):
         match id:
             case "no-regions":
-                self.sender(13, None)
+                self.sender(13, b"")
             case "missing-model":
                 # "Missing Model, download model\nRead: https://github.com/deeppomf/DeepCreamPy/blob/master/docs/INSTALLATION.md#run-code-yourself"
-                self.sender(14, None)
+                self.sender(14, b"")
             case "bounding-box-out-of-bounds":
                 x1_square, y1_square, x2_square, y2_square = info
-                self.sender(15, None)
+                self.sender(15, b"")
             case _:
                 self.sender(16, id.encode('utf-8'))
 
@@ -80,11 +110,11 @@ def get_file_path(id: str) -> str:
     raise HTTPException(status_code=422, detail="File " + id + " not found")
 
 
-class ExecutorInstance(BaseModel):
+class ExecutorInstance:
     _model_mosaic: Optional[InpaintNN] = None
     _model_bar: Optional[InpaintNN] = None
 
-    busy: Optional[str] = False
+    busy: Optional[str] = None
     stop = False
 
     @property
@@ -108,35 +138,37 @@ class ExecutorInstance(BaseModel):
     async def sent_stream(self, items: list[DecensorItem], sender: NotifyType):
         logger = WebLogger(sender) if sender else Logger()
         for index, item in enumerate(items):
-            (self.model_mosaic if item.is_moasic else self.model_bar).logger = logger
+            (self.model_mosaic if item.is_mosaic else self.model_bar).logger = logger
             if self.stop:
-                sender(201, None)
+                sender(201, b"")
                 self.stop = False
                 break
             sender(1, bytes(index) + bytes(len(items)))
             img = get_img(item.img_id)
-            save_image = lambda i, out_img: out_img.save(generate_out_path(item.output, get_file_path(item.img_id), i))
+            save_image = lambda i, out_img: out_img.save(generate_out_path(item.output, item.output_name, i))
             mask = MaskInfo(item.mask)
             if mask.file:
-                mask_img = get_img(mask.file)
+                mask_img = get_img(mask.mask_name)
                 mask_gen = lambda i, ori, colored: RawMask(apply_variant(mask_img, i))
             else:
                 mask_gen = lambda i, ori, colored: ColorMask(colored if item.is_mosaic else ori, rgb=mask.rgb)
             try:
                 await asyncio.to_thread(
-                    decensor_image_variations(self.model_mosaic if item.is_moasic else self.model_bar, img, img,
-                                              mask_gen,
-                                              item.variations, item.is_moasic, save_image, logger=logger))
+                    lambda: decensor_image_variations(
+                        self.model_mosaic if item.is_mosaic else self.model_bar,
+                        img, img, mask_gen, item.variations, item.is_mosaic, save_image, logger=logger
+                    )
+                )
             except Exception as e:
-                sender(202, None)
+                sender(202, b"")
                 return
             sender(2, bytes(index) + bytes(len(items)))
-        sender(200, None)
+        sender(200, b"")
 
 
 class Executors:
     def __init__(self):
-        self.list: List[ExecutorInstance] = []
+        self.list: List[ExecutorInstance] = [ExecutorInstance()]
         self.lock: Lock = Lock()
         self.event = Event()
 
@@ -161,7 +193,7 @@ class Executors:
             return instance
 
     async def free_executor(self, instance: ExecutorInstance):
-        from myqueue import task_queue
+        from .myqueue import task_queue
         instance.free_executor()
         self.event.set()
         self.event.clear()

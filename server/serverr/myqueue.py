@@ -62,6 +62,7 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType, check_disconnect
                 raise HTTPException(500, detail="User is no longer connected")  # just for the logs
         if notify:
             notify(198, str(queue_pos).encode('utf-8'))
+        print(executor_instances.free_executors())
         if queue_pos < executor_instances.free_executors():
             if check_disconnect and await task.is_client_disconnected():
                 await task_queue.update_event()
@@ -69,7 +70,6 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType, check_disconnect
                     return
                 else:
                     raise HTTPException(500, detail="User is no longer connected") #just for the logs
-
             instance = await executor_instances.find_executor(task.item_id)
             await task_queue.remove(task)
             if notify:
@@ -78,7 +78,6 @@ async def wait_in_queue(task: QueueElement, notify: NotifyType, check_disconnect
                 await instance.sent_stream(task.items, notify)
             else:
                 result = await instance.sent(task.items)
-
             await executor_instances.free_executor(instance)
 
             if notify:

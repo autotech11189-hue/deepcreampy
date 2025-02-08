@@ -33,7 +33,7 @@ export default {
     return {
       status: "upload",
       info: null,
-      queuePos: -1
+      queuePos: null
     };
   },
   methods: {
@@ -145,6 +145,15 @@ export default {
         }
       };
 
+      function hexToRgb(hex: string) {
+        hex = hex.replace(/^#/, '');
+        if (hex.length === 3) {
+          hex = hex.split('').map(c => c + c).join('');
+        }
+        const num = parseInt(hex, 16);
+        return `${(num >> 16) & 255},${(num >> 8) & 255},${num & 255}`;
+      }
+
       const uploadWithProgress = async () => {
         try {
 
@@ -153,16 +162,19 @@ export default {
             headers: {
               "Content-Type": "application/json",
             },
+
+
             body: JSON.stringify({
-              imgs: [this.images.map(v => {
+              imgs: this.images.map(v => {
                 return {
-                  mask: v.mask,
-                  img_id: v.image,
+                  mask: this.mask_color ? "rgb-" + hexToRgb(this.mask_color) : "file-" + v.mask,
+                  output_name: v.image.name,
+                  img_id: v.image.id,
                   variations: this.variations,
                   is_mosaic: this.is_mosaic,
                   output: this.output
                 }
-              })]
+              })
             }),
           });
 
