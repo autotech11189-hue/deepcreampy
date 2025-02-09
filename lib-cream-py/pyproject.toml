@@ -1,0 +1,27 @@
+[project]
+name = "lib-cream-py"
+version = "1.0.0"
+
+description = "DeepCreamPy library"
+
+keywords = []
+authors = []
+
+requires-python = ">= 3.9"
+dependencies = [
+    "keras",
+    "tensorflow",
+    "numpy",
+    "Pillow"
+]
+
+[tool.setuptools.packages.find]
+where = [
+    "src"
+]
+
+[project.urls]
+Documentation = "https://github.com/Deepshift/DeepCreamPy/blob/master/docs"
+Repository = "https://github.com/Deepshift/DeepCreamPy"
+"Bug Tracker" = "https://github.com/Deepshift/DeepCreamPy/issues"
+Changelog = "https://github.com/Deepshift/DeepCreamPy/blob/master/CHANGELOG.md"

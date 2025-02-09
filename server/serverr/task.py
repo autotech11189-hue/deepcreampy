@@ -1,0 +1,18 @@
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class DecensorItem(BaseModel):
+    output_name: str
+    """e.g. filename.png"""
+    img_id: str
+    """Images were uploaded earlier."""
+    variations: int
+    """How many variations to generate"""
+    is_mosaic: bool
+    """Which model to use"""
+    mask: str
+    """RGB mask or file"""
+    output: Optional[str]
+    """None will return to web"""

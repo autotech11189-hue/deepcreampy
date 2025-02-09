@@ -9,8 +9,9 @@
 A deep learning-based tool to automatically replace parts of artworks with plausible reconstructions.
 
 Before using DeepCreamPy, the user must mark regions in the artwork using green color with an image editing program (e.g., GIMP, Photoshop). DeepCreamPy takes the images with green colored regions as input, and a neural network automatically fills in the highlighted regions.
+You could also create a mask file that is white where the image needs to be decensored
 
-You can download the latest release for Windows 64-bit [here](https://github.com/Deepshift/DeepCreamPy/releases/latest).
+You can download the latest release [here](https://github.com/Deepshift/DeepCreamPy/releases/latest).
 
 For users interested in compiling DeepCreamPy themselves, DeepCreamPy can run on Windows, Mac, and Linux.
 
@@ -37,7 +38,7 @@ It does NOT work with:
 
 ## Table of Contents
 Setup:
-* [Running latest Window 64-bit release](docs/INSTALLATION_BINARY.md)
+* [Running latest release](docs/INSTALLATION_BINARY.md)
 * [Running code yourself](docs/INSTALLATION.md)
 
 Usage:
@@ -49,8 +50,6 @@ Miscellaneous:
 * [FAQ](docs/FAQ.md)
 
 ## To do
-- Moving to PyTorch or newer versions of TensorFlow
-- Improving UI
 - Error logging
 
 ## Contributions
