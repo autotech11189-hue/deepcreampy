@@ -10,9 +10,7 @@ A deep learning-based tool to automatically replace parts of artworks with plaus
 
 Before using DeepCreamPy, the user must mark regions in the artwork using green color with an image editing program (e.g., GIMP, Photoshop). DeepCreamPy takes the images with green colored regions as input, and a neural network automatically fills in the highlighted regions.
 
-You can download the latest release for Windows 64-bit [here](https://github.com/Deepshift/DeepCreamPy/releases/latest).
-
-For users interested in compiling DeepCreamPy themselves, DeepCreamPy can run on Windows, Mac, and Linux.
+You can download the latest release for Windows 64-bit [here](https://github.com/Deepshift/DeepCreamPy/releases/latest) or use the reimplementation [here](https://github.com/TriggerBurst/FastDeepCreamPy) which is faster and works on any os and doesnt need hent-ai because its integrated as well.
 
 Before opening a new issue, please check [closed issues](https://github.com/Deepshift/DeepCreamPy/issues?q=is%3Aissue+is%3Aclosed) and refer to the [table of contents](https://github.com/Deepshift/DeepCreamPy#table-of-contents).
 
@@ -37,10 +35,12 @@ It does NOT work with:
 
 ## Table of Contents
 Setup:
+* [Run on any os(hent-ai + deepcreampy in one)](https://github.com/TriggerBurst/FastDeepCreamPy)
 * [Running latest Window 64-bit release](docs/INSTALLATION_BINARY.md)
 * [Running code yourself](docs/INSTALLATION.md)
 
 Usage:
+* [Faster multi-os version with deepcreampy & hent-ai](https://github.com/TriggerBurst/FastDeepCreamPy)
 * [Tutorial](docs/USAGE.md)
 * [Troubleshooting for installing](docs/TROUBLESHOOTING.md)
 * [Troubleshooting for poor quality outputs](docs/TROUBLESHOOTING_DECENSORS.md)
@@ -49,7 +49,7 @@ Miscellaneous:
 * [FAQ](docs/FAQ.md)
 
 ## To do
-- Moving to PyTorch or newer versions of TensorFlow
+- ~~Moving to PyTorch or newer versions of TensorFlow~~
 - Improving UI
 - Error logging
 
